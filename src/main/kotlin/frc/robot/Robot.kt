@@ -37,6 +37,7 @@ class Robot : TimedRobot() {
     override fun autonomousExit() {}
 
     override fun teleopInit() {
+        CommandScheduler.getInstance().setDefaultCommand(robotContainer?.driveSystem, robotContainer?.driveSystem?.driveDefaultCommand(robotContainer?.xbox!!))
         autonomousCommand?.cancel()
     }
 
