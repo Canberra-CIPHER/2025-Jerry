@@ -18,8 +18,8 @@ class RobotContainer {
 
     private fun configureBindings() {}
 
-    val autonomousCommand: Command
-        get() = Commands.print("No autonomous command configured")
+    //val autonomousCommand: Command
+        //get() = Commands.print("No autonomous command configured")
 
     val xbox = XboxController(0)
 

@@ -12,8 +12,8 @@ class Robot : TimedRobot() {
 
     override fun robotInit() {
         robotContainer = RobotContainer()
-        GrappleJNI.forceLoad();
         CanBridge.runTCP()
+        CommandScheduler.getInstance().registerSubsystem(robotContainer?.driveSystem!!)
     }
 
     override fun robotPeriodic() {
@@ -27,8 +27,7 @@ class Robot : TimedRobot() {
     override fun disabledExit() {}
 
     override fun autonomousInit() {
-        autonomousCommand = robotContainer?.autonomousCommand
-
+        autonomousCommand = robotContainer?.driveSystem?.autoDefaultCommand()
         autonomousCommand?.schedule()
     }
 
