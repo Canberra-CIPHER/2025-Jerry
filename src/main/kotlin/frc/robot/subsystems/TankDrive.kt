@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj.Timer
 
 class TankDrive(val diffDrive: DifferentialDrive) : SubsystemBase() {
     fun setThrottle(left: Double, right: Double) {
@@ -17,6 +18,17 @@ class TankDrive(val diffDrive: DifferentialDrive) : SubsystemBase() {
             { -> setThrottle(xboxController.getLeftY(), xboxController.getRightY()) },
             { _: Boolean -> setThrottle(0.0, 0.0) },
             { -> false },
+            this
+        )
+    }
+
+    fun autoDefaultCommand(): Command {
+        var autoTimer = Timer()
+        return FunctionalCommand(
+            { -> autoTimer.start() },
+            { -> setThrottle(0.5, 0.5)},
+            { _: Boolean -> setThrottle(0.0, 0.0) },
+            { -> autoTimer.get() > 3},
             this
         )
     }
