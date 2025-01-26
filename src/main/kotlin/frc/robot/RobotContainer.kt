@@ -15,7 +15,9 @@ import edu.wpi.first.networktables.NTSendable
 import edu.wpi.first.networktables.NTSendableBuilder
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.wpilibj.event.EventLoop
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import frc.robot.subsystems.TankDrive
+import frc.robot.subsystems.io.TankDriveIO
 
 class RobotContainer {
     init {
@@ -57,11 +59,14 @@ class RobotContainer {
     }
 
     val diffDrive = DifferentialDrive(leftDrive1, rightDrive1)
-    val driveAnglePID = PIDController(5.0/180.0, 0.0, 0.0)
-    val driveSystem = TankDrive(diffDrive, gyro, driveAnglePID)
+    val driveAnglePID = PIDController(0.07, 0.01, 0.002)
+    val driveIO = TankDriveIO(diffDrive, { -> gyro.yaw.toDouble() })
+    val driveSystem = TankDrive(driveIO, driveAnglePID)
 
     init {
-        driveAnglePID.setTolerance(5.0)
+        driveAnglePID.setTolerance(1.0)
+        driveAnglePID.iZone = 10.0
+        SmartDashboard.putData("DriveAngle PID", driveAnglePID);
         xbox.povLeft(loop).rising().ifHigh {
             driveSystem.snapToAngleCommand(45.0, false).schedule()
         }

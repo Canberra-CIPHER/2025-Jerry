@@ -4,8 +4,9 @@ import com.revrobotics.spark.SparkMax
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.ElevatorFeedforward
+import frc.robot.subsystems.io.ElevatorIO
 
-class Elevator(val liftMotor: SparkMax, var pid: PIDController, var feedforward: ElevatorFeedforward) :  SubsystemBase() {
+class Elevator(val io: ElevatorIO, var pid: PIDController, var feedforward: ElevatorFeedforward) :  SubsystemBase() {
     sealed class ElevatorState {
         class EStop() : ElevatorState()
         class Hold(val height: Double) : ElevatorState()
@@ -27,15 +28,15 @@ class Elevator(val liftMotor: SparkMax, var pid: PIDController, var feedforward:
     }
 
     override fun periodic() {
-        var currentHeight = liftMotor.encoder.position
+        var currentHeight = io.getHeight()
 
         val state = this.state
 
         when(state) {
-            is ElevatorState.EStop -> this.liftMotor.set(0.0)
+            is ElevatorState.EStop -> io.setVoltage(0.0)
             is ElevatorState.Hold -> {
                 var output = pid.calculate(currentHeight, state.height)
-                this.liftMotor.setVoltage(output + this.feedforward.calculate(state.height))
+                io.setVoltage(output + this.feedforward.calculate(state.height))
 
                 if (!pid.atSetpoint()) {
                     this.state = ElevatorState.Moving(state.height)
@@ -43,7 +44,7 @@ class Elevator(val liftMotor: SparkMax, var pid: PIDController, var feedforward:
             }
             is ElevatorState.Moving -> {
                 var output = pid.calculate(currentHeight, state.height)
-                this.liftMotor.setVoltage(output + this.feedforward.calculate(state.height))
+                io.setVoltage(output + this.feedforward.calculate(state.height))
 
                 if (pid.atSetpoint()) {
                     this.state = ElevatorState.Hold(state.height)

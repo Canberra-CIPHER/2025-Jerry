@@ -9,12 +9,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj.Timer
+import frc.robot.subsystems.io.TankDriveIO
 
-class TankDrive(val diffDrive: DifferentialDrive, var gyro: AHRS, var anglePID: PIDController) : SubsystemBase() {
+class TankDrive(val io: TankDriveIO, var anglePID: PIDController) : SubsystemBase() {
     val publisherTurnPower = NetworkTableInstance.getDefault().getTopic("turnPower").genericPublish("double")
 
     fun setThrottle(left: Double, right: Double, squareInputs: Boolean) {
-        diffDrive.tankDrive(left, right, squareInputs)
+        io.diffDrive.tankDrive(left, right, squareInputs)
     }
 
     fun driveDefaultCommand(xboxController: XboxController): Command {
@@ -46,7 +47,7 @@ class TankDrive(val diffDrive: DifferentialDrive, var gyro: AHRS, var anglePID: 
                 anglePID.enableContinuousInput(0.0, 360.0)
             },
             { ->
-                var turnPower = anglePID.calculate(-gyro.yaw.toDouble())
+                var turnPower = anglePID.calculate(-io.getYaw())
                 if (turnPower > 0.25) {
                     turnPower = 0.25
                 }
