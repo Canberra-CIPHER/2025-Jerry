@@ -1,14 +1,11 @@
 package frc.robot.subsystems
 
-import com.studica.frc.AHRS
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.networktables.NetworkTableInstance
-import edu.wpi.first.wpilibj.drive.DifferentialDrive
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj.Timer
 import frc.robot.subsystems.io.TankDriveIO
 
 class TankDrive(val io: TankDriveIO, var anglePID: PIDController) : SubsystemBase() {

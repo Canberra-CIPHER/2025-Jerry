@@ -5,7 +5,6 @@ package frc.robot
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj.TimedRobot
-import au.grapplerobotics.GrappleJNI
 import au.grapplerobotics.CanBridge
 import edu.wpi.first.networktables.NetworkTableInstance
 
