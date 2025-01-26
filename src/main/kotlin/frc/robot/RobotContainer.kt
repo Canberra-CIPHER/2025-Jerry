@@ -56,6 +56,8 @@ class RobotContainer {
         var configRight2 = SparkMaxConfig()
         configRight2.follow(rightDrive1)
         rightDrive2.configure(configRight2, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
+
+        SmartDashboard.putData("Gyro", gyro)
     }
 
     val diffDrive = DifferentialDrive(leftDrive1, rightDrive1)

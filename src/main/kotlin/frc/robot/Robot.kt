@@ -13,10 +13,6 @@ class Robot : TimedRobot() {
     private var autonomousCommand: Command? = null
     private var robotContainer: RobotContainer? = null
 
-    val publisherPitch = NetworkTableInstance.getDefault().getTopic("gyro/pitch").genericPublish("double")
-    val publisherYaw = NetworkTableInstance.getDefault().getTopic("gyro/yaw").genericPublish("double")
-    val publisherRoll = NetworkTableInstance.getDefault().getTopic("gyro/roll").genericPublish("double")
-
     override fun robotInit() {
         robotContainer = RobotContainer()
         CanBridge.runTCP()
@@ -25,9 +21,6 @@ class Robot : TimedRobot() {
 
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
-        publisherYaw.setDouble(robotContainer?.gyro?.yaw?.toDouble()!!)
-        publisherPitch.setDouble(robotContainer?.gyro?.pitch?.toDouble()!!)
-        publisherRoll.setDouble(robotContainer?.gyro?.roll?.toDouble()!!)
         robotContainer?.loop?.poll()
     }
 
