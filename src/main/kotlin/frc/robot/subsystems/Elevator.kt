@@ -1,13 +1,18 @@
 package frc.robot.subsystems
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase
-import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.ElevatorFeedforward
+import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
+import edu.wpi.first.wpilibj2.command.SubsystemBase
 import frc.robot.subsystems.io.ElevatorIO
+
 
 class Elevator(
     val io: ElevatorIO,
@@ -25,6 +30,14 @@ class Elevator(
     }
 
     var state: ElevatorState = ElevatorState.Init()
+
+    var mech: Mechanism2d = Mechanism2d(3.0, 3.0)
+    var root: MechanismRoot2d = mech.getRoot("elevator", 2.0, 0.0)
+    var jerryElevator = root.append(MechanismLigament2d("elevator", 0.0, 90.0))
+
+    init {
+        SmartDashboard.putData("ElevatorMech2d", mech)
+    }
 
     fun estop() {
         this.state = ElevatorState.EStop()
@@ -107,5 +120,7 @@ class Elevator(
         sim.update(0.02)
 
         io.setHeight(sim.positionMeters)
+
+        jerryElevator.length = sim.positionMeters
     }
 }
