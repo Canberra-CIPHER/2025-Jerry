@@ -1,15 +1,20 @@
 package frc.robot.subsystems
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase
-import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.ElevatorFeedforward
+import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
+import edu.wpi.first.wpilibj2.command.SubsystemBase
 import frc.robot.subsystems.io.ElevatorIO
 import frc.robot.wrappers.WrappedSparkMax
+
 
 class Elevator(
     val io: ElevatorIO,
@@ -27,6 +32,14 @@ class Elevator(
     }
 
     var state: ElevatorState = ElevatorState.Init()
+
+    var mech: Mechanism2d = Mechanism2d(3.0, 3.0)
+    var root: MechanismRoot2d = mech.getRoot("elevator", 2.0, 0.0)
+    var jerryElevator = root.append(MechanismLigament2d("elevator", 0.0, 90.0))
+
+    init {
+        SmartDashboard.putData("ElevatorMech2d", mech)
+    }
 
     fun estop() {
         this.state = ElevatorState.EStop()
@@ -104,7 +117,6 @@ class Elevator(
     val sim = ElevatorSim(feedforward.kv, feedforward.ka, motor, minHeight, maxHeight, true, 0.0)
 
     override fun simulationPeriodic() {
-
         if (io.voltageController is WrappedSparkMax) {
             var simMotor = io.voltageController.sim
             simMotor?.iterate(Units.radiansPerSecondToRotationsPerMinute(sim.velocityMetersPerSecond) / (2.88 * 0.0254), 12.0, 0.02)
@@ -115,5 +127,7 @@ class Elevator(
         sim.setInputVoltage(io.voltageController.getVoltage())
         sim.update(0.02)
         io.positionProvider.setPosition(sim.positionMeters)
+
+        jerryElevator.length = sim.positionMeters
     }
 }
