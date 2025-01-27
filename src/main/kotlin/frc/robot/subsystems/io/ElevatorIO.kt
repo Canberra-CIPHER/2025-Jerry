@@ -1,6 +1,7 @@
 package frc.robot.subsystems.io
 
 data class ElevatorIO(
+    val getVoltage: () -> Double,
     val setVoltage: (Double) -> Unit,
     val getHeight: () -> Double,
     val setHeight: (Double) -> Unit,

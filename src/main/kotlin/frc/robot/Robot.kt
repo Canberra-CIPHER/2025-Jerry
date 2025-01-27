@@ -16,6 +16,8 @@ class Robot : TimedRobot() {
         robotContainer = RobotContainer()
         CanBridge.runTCP()
         CommandScheduler.getInstance().registerSubsystem(robotContainer?.driveSystem!!)
+
+        addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
     }
 
     override fun robotPeriodic() {
@@ -30,8 +32,8 @@ class Robot : TimedRobot() {
     override fun disabledExit() {}
 
     override fun autonomousInit() {
-        autonomousCommand = robotContainer?.driveSystem?.snapToAngleCommand(45.0, true)
-        autonomousCommand?.schedule()
+        /*autonomousCommand = robotContainer?.driveSystem?.snapToAngleCommand(45.0, true)
+        autonomousCommand?.schedule()*/
     }
 
     override fun autonomousPeriodic() {}
