@@ -2,8 +2,10 @@ package frc.robot.subsystems
 
 import edu.wpi.first.math.controller.ElevatorFeedforward
 import edu.wpi.first.math.controller.PIDController
+import edu.wpi.first.math.controller.ProfiledPIDController
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
@@ -18,7 +20,7 @@ import frc.robot.wrappers.WrappedSparkMax
 
 class Elevator(
     val io: ElevatorIO,
-    var pid: PIDController,
+    var pid: ProfiledPIDController,
     var feedforward: ElevatorFeedforward,
     var motor: DCMotor,
     var minHeight: Double,
@@ -33,6 +35,10 @@ class Elevator(
 
     var state: ElevatorState = ElevatorState.Init()
 
+    val errorPublisher = NetworkTableInstance.getDefault().getTopic("elevator/error").genericPublish("double")
+    val positionPublisher = NetworkTableInstance.getDefault().getTopic("elevator/position").genericPublish("double")
+    val voltagePublisher = NetworkTableInstance.getDefault().getTopic("elevator/voltage").genericPublish("double")
+
     var mech: Mechanism2d = Mechanism2d(3.0, 3.0)
     var root: MechanismRoot2d = mech.getRoot("elevator", 2.0, 0.0)
     var jerryElevator = root.append(MechanismLigament2d("elevator", 0.0, 90.0))
@@ -46,9 +52,9 @@ class Elevator(
     }
 
     fun goToHeight(height: Double, reset: Boolean = true) {
-        if (reset) {
+        /*if (reset) {
             this.pid.reset()
-        }
+        }*/
         this.state = ElevatorState.Moving(height)
     }
 
@@ -105,6 +111,12 @@ class Elevator(
         io.voltageController.setVoltage(voltage)
     }
 
+    override fun periodic() {
+        errorPublisher.setDouble(pid.positionError)
+        positionPublisher.setDouble(io.positionProvider.getPosition())
+        voltagePublisher.setDouble(io.voltageController.getVoltage())
+    }
+
     fun goToHeightCommand(height: Double, continuous: Boolean): Command {
         return FunctionalCommand(
             { -> this.goToHeight(height, true) },
@@ -119,14 +131,13 @@ class Elevator(
     override fun simulationPeriodic() {
         if (io.voltageController is WrappedSparkMax) {
             var simMotor = io.voltageController.sim
-            simMotor?.iterate(Units.radiansPerSecondToRotationsPerMinute(sim.velocityMetersPerSecond) / (2.88 * 0.0254), 12.0, 0.02)
+            simMotor?.iterate(Units.radiansPerSecondToRotationsPerMinute(sim.velocityMetersPerSecond / (2.82 / 2.0 * 0.0254)), 12.0, 0.02)
         }
 
         println("Sim Periodic " + io.voltageController.getVoltage())
 
         sim.setInputVoltage(io.voltageController.getVoltage())
         sim.update(0.02)
-        io.positionProvider.setPosition(sim.positionMeters)
 
         jerryElevator.length = sim.positionMeters
     }

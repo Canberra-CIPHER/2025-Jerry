@@ -9,7 +9,9 @@ import com.revrobotics.spark.config.SparkMaxConfig
 import com.revrobotics.spark.SparkBase
 import edu.wpi.first.math.controller.ElevatorFeedforward
 import edu.wpi.first.math.controller.PIDController
+import edu.wpi.first.math.controller.ProfiledPIDController
 import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.wpilibj.event.EventLoop
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import frc.robot.subsystems.Elevator
@@ -90,13 +92,13 @@ class RobotContainer {
         liftMotor1Wrapped,
     )
 
-    val elevatorPID = PIDController(12.0, 0.0, 0.0)
+    val elevatorPID = ProfiledPIDController(12.0, 0.0, 0.0, TrapezoidProfile.Constraints(2.0, 16.0))
     val elevatorFeedforward = ElevatorFeedforward(0.0, 1.54, 8.16, 0.19)
 
     init {
         elevatorPID.setTolerance(0.02)
         elevatorPID.iZone = 0.1
-        SmartDashboard.putData("Elevator PID", elevatorPID);
+        SmartDashboard.putData("Elevator PID", elevatorPID)
     }
 
     val elevator = Elevator(
