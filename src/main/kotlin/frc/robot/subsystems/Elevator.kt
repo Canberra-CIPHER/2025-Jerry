@@ -4,10 +4,12 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.ElevatorFeedforward
 import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import frc.robot.subsystems.io.ElevatorIO
+import frc.robot.wrappers.WrappedSparkMax
 
 class Elevator(
     val io: ElevatorIO,
@@ -42,7 +44,7 @@ class Elevator(
     }
 
     fun controlPeriodic() {
-        var currentHeight = io.getHeight()
+        var currentHeight = io.positionProvider.getPosition()
         var voltage = 0.0
 
         val state = this.state
@@ -58,7 +60,7 @@ class Elevator(
                 }
                 else if (io.getCalibrationHeight != null) {
                     io.getCalibrationHeight.let { getCalibrationHeight ->
-                        io.setHeight(getCalibrationHeight())
+                        io.positionProvider.setPosition(getCalibrationHeight())
                     }
                 }
             }
@@ -73,7 +75,7 @@ class Elevator(
             is ElevatorState.Init -> {
                 if (io.getCalibrationHeight != null) {
                     io.getCalibrationHeight.let { getCalibrationHeight ->
-                        io.setHeight(getCalibrationHeight())
+                        io.positionProvider.setPosition(getCalibrationHeight())
                     }
                 }
             }
@@ -87,7 +89,7 @@ class Elevator(
             voltage = 0.0
         }
 
-        io.setVoltage(voltage)
+        io.voltageController.setVoltage(voltage)
     }
 
     fun goToHeightCommand(height: Double, continuous: Boolean): Command {
@@ -102,10 +104,16 @@ class Elevator(
     val sim = ElevatorSim(feedforward.kv, feedforward.ka, motor, minHeight, maxHeight, true, 0.0)
 
     override fun simulationPeriodic() {
-        println("Sim Periodic " + io.getVoltage())
-        sim.setInputVoltage(io.getVoltage())
-        sim.update(0.02)
 
-        io.setHeight(sim.positionMeters)
+        if (io.voltageController is WrappedSparkMax) {
+            var simMotor = io.voltageController.sim
+            simMotor?.iterate(Units.radiansPerSecondToRotationsPerMinute(sim.velocityMetersPerSecond) / (2.88 * 0.0254), 12.0, 0.02)
+        }
+
+        println("Sim Periodic " + io.voltageController.getVoltage())
+
+        sim.setInputVoltage(io.voltageController.getVoltage())
+        sim.update(0.02)
+        io.positionProvider.setPosition(sim.positionMeters)
     }
 }

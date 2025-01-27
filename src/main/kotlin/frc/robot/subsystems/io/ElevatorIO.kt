@@ -1,10 +1,11 @@
 package frc.robot.subsystems.io
 
+import frc.robot.wrappers.PositionProvider
+import frc.robot.wrappers.VoltageController
+
 data class ElevatorIO(
-    val getVoltage: () -> Double,
-    val setVoltage: (Double) -> Unit,
-    val getHeight: () -> Double,
-    val setHeight: (Double) -> Unit,
+    val voltageController: VoltageController,
+    val positionProvider: PositionProvider,
     val getLimitLow: (() -> Boolean)? = null,
     val getLimitHigh: (() -> Boolean)? = null,
     val getCalibrationHeight: (() -> Double)? = null,

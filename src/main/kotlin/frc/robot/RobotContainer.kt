@@ -16,6 +16,7 @@ import frc.robot.subsystems.Elevator
 import frc.robot.subsystems.TankDrive
 import frc.robot.subsystems.io.ElevatorIO
 import frc.robot.subsystems.io.TankDriveIO
+import frc.robot.wrappers.WrappedSparkMax
 
 class RobotContainer {
     val loop = EventLoop()
@@ -80,11 +81,13 @@ class RobotContainer {
         leftDrive1.configure(configLift1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
     }
 
+    val liftMotorModel = DCMotor.getNEO(1).withReduction(15.0)
+
+    val liftMotor1Wrapped = WrappedSparkMax(liftMotor1, liftMotorModel)
+
     val liftIO = ElevatorIO(
-        { -> liftMotor1.busVoltage * liftMotor1.appliedOutput },
-        { voltage: Double -> liftMotor1.setVoltage(voltage) },
-        { -> liftMotor1.encoder.position },
-        { height: Double -> liftMotor1.encoder.position = height },
+        liftMotor1Wrapped,
+        liftMotor1Wrapped,
     )
 
     val elevatorPID = PIDController(12.0, 0.0, 0.0)
@@ -100,7 +103,7 @@ class RobotContainer {
         liftIO,
         elevatorPID,
         elevatorFeedforward,
-        DCMotor.getNEO(1).withReduction(15.0),
+        liftMotorModel,
         0.0,
         1.8)
 
