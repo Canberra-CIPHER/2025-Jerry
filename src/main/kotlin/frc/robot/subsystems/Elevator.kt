@@ -35,9 +35,9 @@ class Elevator(
 
     var state: ElevatorState = ElevatorState.Init()
 
-    val errorPublisher = NetworkTableInstance.getDefault().getTopic("elevator/error").genericPublish("double")
-    val positionPublisher = NetworkTableInstance.getDefault().getTopic("elevator/position").genericPublish("double")
-    val voltagePublisher = NetworkTableInstance.getDefault().getTopic("elevator/voltage").genericPublish("double")
+    val elevatorErrorPublisher = NetworkTableInstance.getDefault().getTopic("elevator/error").genericPublish("double")
+    val elevatorPositionPublisher = NetworkTableInstance.getDefault().getTopic("elevator/position").genericPublish("double")
+    val elevatorVoltagePublisher = NetworkTableInstance.getDefault().getTopic("elevator/voltage").genericPublish("double")
 
     var mech: Mechanism2d = Mechanism2d(3.0, 3.0)
     var root: MechanismRoot2d = mech.getRoot("elevator", 2.0, 0.0)
@@ -112,9 +112,9 @@ class Elevator(
     }
 
     override fun periodic() {
-        errorPublisher.setDouble(pid.positionError)
-        positionPublisher.setDouble(io.positionProvider.getPosition())
-        voltagePublisher.setDouble(io.voltageController.getVoltage())
+        elevatorErrorPublisher.setDouble(pid.positionError)
+        elevatorPositionPublisher.setDouble(io.positionProvider.getPosition())
+        elevatorVoltagePublisher.setDouble(io.voltageController.getVoltage())
     }
 
     fun goToHeightCommand(height: Double, continuous: Boolean): Command {

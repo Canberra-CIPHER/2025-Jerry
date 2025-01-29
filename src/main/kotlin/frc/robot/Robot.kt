@@ -15,9 +15,10 @@ class Robot : TimedRobot() {
     override fun robotInit() {
         robotContainer = RobotContainer()
         CanBridge.runTCP()
-        CommandScheduler.getInstance().registerSubsystem(robotContainer?.driveSystem!!)
+        //CommandScheduler.getInstance().registerSubsystem(robotContainer?.driveSystem!!)
 
-        addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
+        //addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
+        addPeriodic({ -> robotContainer?.arm?.controlPeriodic() }, 0.01)
     }
 
     override fun robotPeriodic() {
@@ -42,7 +43,7 @@ class Robot : TimedRobot() {
 
     override fun teleopInit() {
         autonomousCommand?.cancel()
-        CommandScheduler.getInstance().setDefaultCommand(robotContainer?.driveSystem, robotContainer?.driveSystem?.driveDefaultCommand(robotContainer?.xbox!!))
+        //CommandScheduler.getInstance().setDefaultCommand(robotContainer?.driveSystem, robotContainer?.driveSystem?.driveDefaultCommand(robotContainer?.xbox!!))
     }
 
     override fun teleopPeriodic() {}

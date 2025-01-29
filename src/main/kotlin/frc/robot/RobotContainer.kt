@@ -15,8 +15,10 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.wpilibj.event.EventLoop
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import frc.robot.subsystems.Elevator
+import frc.robot.subsystems.RotationSystem
 import frc.robot.subsystems.TankDrive
 import frc.robot.subsystems.io.ElevatorIO
+import frc.robot.subsystems.io.RotationSystemIO
 import frc.robot.subsystems.io.TankDriveIO
 import frc.robot.wrappers.WrappedSparkMax
 
@@ -28,7 +30,7 @@ class RobotContainer {
 
     val xbox = XboxController(0)
 
-    val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
+    /*val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
     val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
     val rightDrive1 = SparkMax(3, SparkLowLevel.MotorType.kBrushed)
     val rightDrive2 = SparkMax(4, SparkLowLevel.MotorType.kBrushed)
@@ -70,9 +72,9 @@ class RobotContainer {
                 driveSystem.snapToAngleCommand(angle.toDouble(), false).schedule()
             }
         }
-    }
+    }*/
 
-    val liftMotor1 = SparkMax(10, SparkLowLevel.MotorType.kBrushless)
+/*    val liftMotor1 = SparkMax(10, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configLift1 = SparkMaxConfig()
@@ -80,7 +82,7 @@ class RobotContainer {
         configLift1.encoder.positionConversionFactor(0.035814)
         configLift1.encoder.velocityConversionFactor(0.035814)
         configLift1.smartCurrentLimit(40)
-        leftDrive1.configure(configLift1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
+        liftMotor1.configure(configLift1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
     }
 
     val liftMotorModel = DCMotor.getNEO(1).withReduction(15.0)
@@ -115,6 +117,47 @@ class RobotContainer {
         }
         xbox.b(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.0, false).schedule()
+        }
+    }*/
+
+    val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
+
+    init {
+        var configArm1 = SparkMaxConfig()
+        configArm1.inverted(false)
+        configArm1.encoder.positionConversionFactor(360.0)
+        configArm1.encoder.velocityConversionFactor(360.0)
+        configArm1.smartCurrentLimit(40)
+        armMotor1.configure(configArm1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
+    }
+
+    val armMotorModel = DCMotor.getNEO(1).withReduction(1.0)
+    val armMotor1Wrapped = WrappedSparkMax(armMotor1, armMotorModel)
+
+    val armIO = RotationSystemIO(
+        armMotor1Wrapped,
+        armMotor1Wrapped,
+    )
+
+    val armPID = ProfiledPIDController(2.0 / 180.0, 0.0, 0.0, TrapezoidProfile.Constraints(60.0, 1400.0))
+
+    init {
+        armPID.setTolerance(0.5)
+        armPID.iZone = 3.0
+        SmartDashboard.putData("Arm PID", armPID)
+    }
+
+    val arm = RotationSystem(
+        armIO,
+        armPID,
+        )
+
+    init {
+        xbox.x(loop).rising().ifHigh {
+            arm.goToAngleCommand(180.0).schedule()
+        }
+        xbox.y(loop).rising().ifHigh {
+            arm.goToAngleCommand(-180.0).schedule()
         }
     }
 }
