@@ -7,10 +7,7 @@ import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
-import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
-import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
-import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
+import edu.wpi.first.wpilibj.smartdashboard.*
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import edu.wpi.first.wpilibj2.command.SubsystemBase
@@ -25,6 +22,7 @@ class Elevator(
     var motor: DCMotor,
     var minHeight: Double,
     var maxHeight: Double,
+    var elevatorModel: MechanismLigament2d,
 ) :  SubsystemBase() {
     sealed class ElevatorState {
         class EStop() : ElevatorState()
@@ -38,14 +36,7 @@ class Elevator(
     val elevatorErrorPublisher = NetworkTableInstance.getDefault().getTopic("elevator/error").genericPublish("double")
     val elevatorPositionPublisher = NetworkTableInstance.getDefault().getTopic("elevator/position").genericPublish("double")
     val elevatorVoltagePublisher = NetworkTableInstance.getDefault().getTopic("elevator/voltage").genericPublish("double")
-
-    var mech: Mechanism2d = Mechanism2d(3.0, 3.0)
-    var root: MechanismRoot2d = mech.getRoot("elevator", 2.0, 0.0)
-    var jerryElevator = root.append(MechanismLigament2d("elevator", 0.0, 90.0))
-
-    init {
-        SmartDashboard.putData("ElevatorMech2d", mech)
-    }
+    val elevatorCANPublisher = NetworkTableInstance.getDefault().getTopic("elevator/CAN").genericPublish("double")
 
     fun estop() {
         this.state = ElevatorState.EStop()
@@ -72,20 +63,25 @@ class Elevator(
             is ElevatorState.EStop -> voltage = (0.0)
             is ElevatorState.Hold -> {
                 var output = pid.calculate(currentHeight, state.height)
-                voltage = (output + this.feedforward.calculate(state.height))
+                //voltage = (output + this.feedforward.calculate(state.height))
+                voltage = output
 
                 if (!pid.atSetpoint()) {
                     this.state = ElevatorState.Moving(state.height)
                 }
                 else if (io.getCalibrationHeight != null) {
                     io.getCalibrationHeight.let { getCalibrationHeight ->
-                        io.positionProvider.setPosition(getCalibrationHeight())
+                        val calHeight = getCalibrationHeight()
+                        if (calHeight != null) {
+                            io.positionProvider.setPosition(calHeight)
+                        }
                     }
                 }
             }
             is ElevatorState.Moving -> {
                 var output = pid.calculate(currentHeight, state.height)
-                voltage = (output + this.feedforward.calculate(state.height))
+                //voltage = (output + this.feedforward.calculate(state.height))
+                voltage = output
 
                 if (pid.atSetpoint()) {
                     this.state = ElevatorState.Hold(state.height)
@@ -94,7 +90,10 @@ class Elevator(
             is ElevatorState.Init -> {
                 if (io.getCalibrationHeight != null) {
                     io.getCalibrationHeight.let { getCalibrationHeight ->
-                        io.positionProvider.setPosition(getCalibrationHeight())
+                        val calHeight = getCalibrationHeight()
+                        if (calHeight != null) {
+                            io.positionProvider.setPosition(calHeight)
+                        }
                     }
                 }
             }
@@ -115,6 +114,13 @@ class Elevator(
         elevatorErrorPublisher.setDouble(pid.positionError)
         elevatorPositionPublisher.setDouble(io.positionProvider.getPosition())
         elevatorVoltagePublisher.setDouble(io.voltageController.getVoltage())
+
+        io.getCalibrationHeight.let { getCalibrationHeight ->
+            val calHeight = getCalibrationHeight?.let { it() }
+            if (calHeight != null) {
+                elevatorCANPublisher.setDouble(calHeight)
+            }
+        }
     }
 
     fun goToHeightCommand(height: Double, continuous: Boolean): Command {
@@ -122,7 +128,8 @@ class Elevator(
             { -> this.goToHeight(height, true) },
             { -> Unit },
             { _ -> Unit },
-            { -> !continuous && this.isStable() }
+            { -> !continuous && this.isStable() },
+            this
         )
     }
 
@@ -131,7 +138,7 @@ class Elevator(
     override fun simulationPeriodic() {
         if (io.voltageController is WrappedSparkMax) {
             var simMotor = io.voltageController.sim
-            simMotor?.iterate(Units.radiansPerSecondToRotationsPerMinute(sim.velocityMetersPerSecond / (2.82 / 2.0 * 0.0254)), 12.0, 0.02)
+            simMotor?.iterate(sim.velocityMetersPerSecond, 12.0, 0.02)
         }
 
         println("Sim Periodic " + io.voltageController.getVoltage())
@@ -139,6 +146,6 @@ class Elevator(
         sim.setInputVoltage(io.voltageController.getVoltage())
         sim.update(0.02)
 
-        jerryElevator.length = sim.positionMeters
+        elevatorModel.length = sim.positionMeters
     }
 }

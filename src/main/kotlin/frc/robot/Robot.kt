@@ -1,4 +1,6 @@
-//Our code for our chiddler Gheoughrobarhgeaux
+//Our code for our chiddler Gheoughrobarhgeaux Bartholomew Barlo-quenné Norman Smith
+//AKA Jerry AKA Jerryatrick
+//Born under an Aquarius sun, Aries rising, and Scorpio moon, in the year of the Dragon
 
 package frc.robot
 
@@ -16,8 +18,10 @@ class Robot : TimedRobot() {
         robotContainer = RobotContainer()
         CanBridge.runTCP()
         //CommandScheduler.getInstance().registerSubsystem(robotContainer?.driveSystem!!)
+        CommandScheduler.getInstance().registerSubsystem(robotContainer?.elevator!!)
+        CommandScheduler.getInstance().registerSubsystem(robotContainer?.arm!!)
 
-        //addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
+        addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
         addPeriodic({ -> robotContainer?.arm?.controlPeriodic() }, 0.01)
     }
 

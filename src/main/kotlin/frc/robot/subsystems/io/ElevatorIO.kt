@@ -8,5 +8,5 @@ data class ElevatorIO(
     val positionProvider: PositionProvider,
     val getLimitLow: (() -> Boolean)? = null,
     val getLimitHigh: (() -> Boolean)? = null,
-    val getCalibrationHeight: (() -> Double)? = null,
+    val getCalibrationHeight: (() -> Double?)? = null,
 )

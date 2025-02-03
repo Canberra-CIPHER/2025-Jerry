@@ -2,12 +2,23 @@ package frc.robot.subsystems
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.math.controller.ProfiledPIDController
+import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.networktables.NetworkTableInstance
+import edu.wpi.first.wpilibj.simulation.ElevatorSim
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim
+import edu.wpi.first.wpilibj.smartdashboard.*
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import frc.robot.subsystems.io.RotationSystemIO
+import frc.robot.wrappers.WrappedSparkMax
 
-class RotationSystem(val io: RotationSystemIO, var pid: ProfiledPIDController) :  SubsystemBase() {
+class RotationSystem(
+    val io: RotationSystemIO,
+    var pid: ProfiledPIDController,
+    var motor: DCMotor,
+    var armModel: MechanismLigament2d,
+) :  SubsystemBase() {
     sealed class ArmState {
         class EStop() : ArmState()
         class Hold(val angle: Double) : ArmState()
@@ -67,12 +78,29 @@ class RotationSystem(val io: RotationSystemIO, var pid: ProfiledPIDController) :
         armVoltagePublisher.setDouble(io.voltageController.getVoltage())
     }
 
-    fun goToAngleCommand(angle: Double): Command {
+    fun goToAngleCommand(angle: Double, continuous: Boolean): Command {
         return FunctionalCommand(
             { -> this.goToAngle(angle) },
             { -> Unit },
             { _ -> Unit },
-            { -> this.isStable() }
+            { -> !continuous && this.isStable() },
+            this
         )
+    }
+
+    val sim = SingleJointedArmSim(motor, 1.0, 0.6, 0.4, 0.0, 6.28, true, 0.0, 0.0, 0.0)
+
+    override fun simulationPeriodic() {
+        if (io.voltageController is WrappedSparkMax) {
+            var simMotor = io.voltageController.sim
+            simMotor?.iterate(sim.velocityRadPerSec / 6.28 * 360.0, 12.0, 0.02)
+        }
+
+        println("Sim Periodic " + sim.velocityRadPerSec)
+
+        sim.setInputVoltage(io.voltageController.getVoltage())
+        sim.update(0.02)
+
+        armModel.angle = sim.angleRads / 6.28 * 360.0 - 90.0
     }
 }
