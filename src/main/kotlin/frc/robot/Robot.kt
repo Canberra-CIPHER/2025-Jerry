@@ -19,10 +19,12 @@ class Robot : TimedRobot() {
         CanBridge.runTCP()
         //CommandScheduler.getInstance().registerSubsystem(robotContainer?.driveSystem!!)
         CommandScheduler.getInstance().registerSubsystem(robotContainer?.elevator!!)
-        CommandScheduler.getInstance().registerSubsystem(robotContainer?.arm!!)
+        //CommandScheduler.getInstance().registerSubsystem(robotContainer?.arm!!)
+        CommandScheduler.getInstance().registerSubsystem(robotContainer?.grabber!!)
 
         addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
-        addPeriodic({ -> robotContainer?.arm?.controlPeriodic() }, 0.01)
+        //addPeriodic({ -> robotContainer?.arm?.controlPeriodic() }, 0.01)
+        addPeriodic({ -> robotContainer?.grabber?.controlPeriodic() }, 0.01)
     }
 
     override fun robotPeriodic() {

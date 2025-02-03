@@ -137,16 +137,16 @@ class RobotContainer {
         jerryElevator
     )
 
-    init {
+    /*init {
         xbox.a(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.0, false).schedule()
         }
         xbox.b(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.75, false).schedule()
         }
-    }
+    }*/
 
-    val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
+    /*val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configArm1 = SparkMaxConfig()
@@ -161,7 +161,7 @@ class RobotContainer {
         )
     }
 
-    val armMotorModel = DCMotor.getNEO(1).withReduction(100.0)
+    val armMotorModel = DCMotor.getNEO(1).withReduction(25.0)
     val armMotor1Wrapped = WrappedSparkMax(armMotor1, armMotorModel)
 
     val armIO = RotationSystemIO(
@@ -186,22 +186,27 @@ class RobotContainer {
 
     init {
         xbox.x(loop).rising().ifHigh {
-            arm.goToAngleCommand(180.0, true).schedule()
+            elevator.goToHeightCommand(0.75, true).alongWith(arm.goToAngleCommand(360.0, true)).schedule()
+        }
+        xbox.a(loop).rising().ifHigh {
+            elevator.goToHeightCommand(0.50, true).alongWith(arm.goToAngleCommand(270.0, true)).schedule()
+        }
+        *//*xbox.b(loop).rising().ifHigh {
+            elevator.goToHeightCommand(0.25, true).alongWith(arm.goToAngleCommand(180.0, true)).schedule()
         }
         xbox.y(loop).rising().ifHigh {
-            arm.goToAngleCommand(-180.0, true).schedule()
-        }
-    }
-}
+            elevator.goToHeightCommand(0.0, false).alongWith(arm.goToAngleCommand(90.0, true)).schedule()
+        }*//*
+    }*/
 
-   /* val grabberMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
+    val grabberMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configGrabber1 = SparkMaxConfig()
         configGrabber1.inverted(false)
         configGrabber1.encoder.positionConversionFactor(360.0)
         configGrabber1.encoder.velocityConversionFactor(360.0)
-        configGrabber1.smartCurrentLimit(40)
+        configGrabber1.smartCurrentLimit(35)
         grabberMotor1.configure(configGrabber1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
     }
 
@@ -212,15 +217,15 @@ class RobotContainer {
 
     val grabber = Grabber(
         grabberIO,
-        0.5
+        0.0
     )
 
     init {
         xbox.b(loop).rising().ifHigh {
-            grabber.intakeCommand(6.0).withTimeout(5.0).schedule()
+            grabber.intakeCommand(12.0).withTimeout(5.0).schedule()
         }
         xbox.y(loop).rising().ifHigh {
-            grabber.outputCommand(6.0).withTimeout(5.0).schedule()
+            grabber.outputCommand(12.0).withTimeout(5.0).schedule()
         }
     }
-}*/
+}
