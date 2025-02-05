@@ -13,6 +13,8 @@ import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.ProfiledPIDController
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.trajectory.TrapezoidProfile
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.Filesystem
 import edu.wpi.first.wpilibj.event.EventLoop
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
@@ -20,15 +22,13 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.Color
 import edu.wpi.first.wpilibj.util.Color8Bit
-import frc.robot.subsystems.Elevator
-import frc.robot.subsystems.Grabber
-import frc.robot.subsystems.RotationSystem
-import frc.robot.subsystems.TankDrive
-import frc.robot.subsystems.io.ElevatorIO
-import frc.robot.subsystems.io.GrabberIO
-import frc.robot.subsystems.io.RotationSystemIO
-import frc.robot.subsystems.io.TankDriveIO
+import frc.robot.subsystems.*
+import frc.robot.subsystems.io.*
 import frc.robot.wrappers.WrappedSparkMax
+import swervelib.SwerveDrive
+import swervelib.parser.SwerveParser
+import swervelib.telemetry.SwerveDriveTelemetry
+import java.io.File
 
 class RobotContainer {
     val loop = EventLoop()
@@ -37,6 +37,21 @@ class RobotContainer {
     //get() = Commands.print("No autonomous command configured")
 
     val xbox = XboxController(0)
+
+    val swerveJsonDirectory = File(Filesystem.getDeployDirectory(),"swerve")
+    val swerveDrive = SwerveParser(swerveJsonDirectory).createSwerveDrive(Units.feetToMeters(17.0))
+
+    init {
+        SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH
+    }
+
+    val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
+    val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
+    val rightDrive1 = SparkMax(3, SparkLowLevel.MotorType.kBrushed)
+    val rightDrive2 = SparkMax(4, SparkLowLevel.MotorType.kBrushed)
+
+    val swerveDriveIO = SwerveDriveIO(swerveDrive)
+    val swerveDriveSystem = SwerveDriveSubsystem(swerveDriveIO)
 
     /*val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
     val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
@@ -137,16 +152,16 @@ class RobotContainer {
         jerryElevator
     )
 
-    /*init {
+    init {
         xbox.a(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.0, false).schedule()
         }
         xbox.b(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.75, false).schedule()
         }
-    }*/
+    }
 
-    /*val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
+    val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configArm1 = SparkMaxConfig()
@@ -191,15 +206,15 @@ class RobotContainer {
         xbox.a(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.50, true).alongWith(arm.goToAngleCommand(270.0, true)).schedule()
         }
-        *//*xbox.b(loop).rising().ifHigh {
+        xbox.b(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.25, true).alongWith(arm.goToAngleCommand(180.0, true)).schedule()
         }
         xbox.y(loop).rising().ifHigh {
             elevator.goToHeightCommand(0.0, false).alongWith(arm.goToAngleCommand(90.0, true)).schedule()
-        }*//*
-    }*/
+        }
+    }
 
-    val grabberMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
+    /*val grabberMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configGrabber1 = SparkMaxConfig()
@@ -227,5 +242,5 @@ class RobotContainer {
         xbox.y(loop).rising().ifHigh {
             grabber.outputCommand(12.0).withTimeout(5.0).schedule()
         }
-    }
+    }*/
 }
