@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.Color
 import edu.wpi.first.wpilibj.util.Color8Bit
+import edu.wpi.first.wpilibj2.command.CommandScheduler
 import frc.robot.subsystems.*
 import frc.robot.subsystems.io.*
 import frc.robot.wrappers.WrappedSparkMax
@@ -38,7 +39,7 @@ class RobotContainer {
 
     val xbox = XboxController(0)
 
-    val swerveJsonDirectory = File(Filesystem.getDeployDirectory(),"swerve")
+    /*val swerveJsonDirectory = File(Filesystem.getDeployDirectory(),"swerve")
     val swerveDrive = SwerveParser(swerveJsonDirectory).createSwerveDrive(Units.feetToMeters(17.0))
 
     init {
@@ -53,7 +54,7 @@ class RobotContainer {
     val swerveDriveIO = SwerveDriveIO(swerveDrive)
     val swerveDriveSystem = SwerveDriveSubsystem(swerveDriveIO)
 
-    /*val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
+    val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
     val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
     val rightDrive1 = SparkMax(3, SparkLowLevel.MotorType.kBrushed)
     val rightDrive2 = SparkMax(4, SparkLowLevel.MotorType.kBrushed)
@@ -99,14 +100,16 @@ class RobotContainer {
 
     var mech: Mechanism2d = Mechanism2d(3.0, 3.0)
     var root: MechanismRoot2d = mech.getRoot("elevator", 2.0, 0.0)
-    var jerryElevator = root.append(MechanismLigament2d("elevator", 0.0, 90.0, 10.0, Color8Bit(Color.kGoldenrod)))
-    var jerryArm = jerryElevator.append(MechanismLigament2d("arm", 0.4, 0.0, 8.0, Color8Bit(Color.kYellow)))
+    var jerryElevator = root.append(MechanismLigament2d("elevator", 0.0, 90.0, 10.0, Color8Bit(Color.kDarkGoldenrod)))
+    var jerryArm = jerryElevator.append(MechanismLigament2d("arm", 0.4, 0.0, 8.0, Color8Bit(Color.kGoldenrod)))
+    var jerryTwist = jerryArm.append(MechanismLigament2d("twist", 0.1, 0.0, 8.0, Color8Bit(Color.kYellow)))
+    var jerryWrist = jerryTwist.append(MechanismLigament2d("wrist", 0.4, 0.0, 8.0, Color8Bit(Color.kLemonChiffon)))
 
     init {
         SmartDashboard.putData("Mech2d", mech)
     }
 
-    val liftMotor1 = SparkMax(10, SparkLowLevel.MotorType.kBrushless)
+    /*val liftMotor1 = SparkMax(10, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var conversion = 6.28 / 15.0 * (2.82/2.0 * 0.0254)
@@ -150,18 +153,9 @@ class RobotContainer {
         0.0,
         1.8,
         jerryElevator
-    )
+    )*/
 
-    init {
-        xbox.a(loop).rising().ifHigh {
-            elevator.goToHeightCommand(0.0, false).schedule()
-        }
-        xbox.b(loop).rising().ifHigh {
-            elevator.goToHeightCommand(0.75, false).schedule()
-        }
-    }
-
-    val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
+    /*val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configArm1 = SparkMaxConfig()
@@ -197,20 +191,96 @@ class RobotContainer {
         armPID,
         armMotorModel,
         jerryArm
+    )*/
+
+    val twistMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
+
+    init {
+        var configTwist1 = SparkMaxConfig()
+        configTwist1.inverted(false)
+        configTwist1.encoder.positionConversionFactor(360.0 / 25.0)
+        configTwist1.encoder.velocityConversionFactor(360.0 / 25.0 / 60.0)
+        configTwist1.smartCurrentLimit(80)
+        twistMotor1.configure(
+            configTwist1,
+            SparkBase.ResetMode.kResetSafeParameters,
+            SparkBase.PersistMode.kPersistParameters
+        )
+    }
+
+    val twistMotorModel = DCMotor.getNEO(1).withReduction(25.0)
+    val twistMotor1Wrapped = WrappedSparkMax(twistMotor1, twistMotorModel)
+
+    val twistIO = RotationSystemIO(
+        twistMotor1Wrapped,
+        twistMotor1Wrapped
+    )
+
+    val twistPID = ProfiledPIDController(0.1, 0.0, 0.0, TrapezoidProfile.Constraints(360.0, 1400.0))
+
+    init {
+        twistPID.setTolerance(0.5, 0.5)
+        twistPID.iZone = 3.0
+        SmartDashboard.putData("Twist PID", twistPID)
+    }
+
+    val twist = RotationSystem(
+        twistIO,
+        twistPID,
+        twistMotorModel,
+        jerryTwist
+    )
+
+        val wristMotor1 = SparkMax(40, SparkLowLevel.MotorType.kBrushless)
+
+    init {
+        var configWrist1 = SparkMaxConfig()
+        configWrist1.inverted(false)
+        configWrist1.encoder.positionConversionFactor(360.0 / 25.0)
+        configWrist1.encoder.velocityConversionFactor(360.0 / 25.0 / 60.0)
+        configWrist1.smartCurrentLimit(80)
+        wristMotor1.configure(
+            configWrist1,
+            SparkBase.ResetMode.kResetSafeParameters,
+            SparkBase.PersistMode.kPersistParameters
+        )
+    }
+
+    val wristMotorModel = DCMotor.getNEO(1).withReduction(25.0)
+    val wristMotor1Wrapped = WrappedSparkMax(wristMotor1, wristMotorModel)
+
+    val wristIO = RotationSystemIO(
+        wristMotor1Wrapped,
+        wristMotor1Wrapped
+    )
+
+    val wristPID = ProfiledPIDController(0.1, 0.0, 0.0, TrapezoidProfile.Constraints(360.0, 1400.0))
+
+    init {
+        wristPID.setTolerance(0.5, 0.5)
+        wristPID.iZone = 3.0
+        SmartDashboard.putData("Wrist PID", wristPID)
+    }
+
+    val wrist = RotationSystem(
+        wristIO,
+        wristPID,
+        wristMotorModel,
+        jerryWrist
     )
 
     init {
         xbox.x(loop).rising().ifHigh {
-            elevator.goToHeightCommand(0.75, true).alongWith(arm.goToAngleCommand(360.0, true)).schedule()
+            twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
         }
         xbox.a(loop).rising().ifHigh {
-            elevator.goToHeightCommand(0.50, true).alongWith(arm.goToAngleCommand(270.0, true)).schedule()
+            twist.goToAngleCommand(90.0, true).alongWith(wrist.goToAngleCommand(90.0, true)).schedule()
         }
         xbox.b(loop).rising().ifHigh {
-            elevator.goToHeightCommand(0.25, true).alongWith(arm.goToAngleCommand(180.0, true)).schedule()
+            twist.goToAngleCommand(180.0, true).alongWith(wrist.goToAngleCommand(180.0, true)).schedule()
         }
         xbox.y(loop).rising().ifHigh {
-            elevator.goToHeightCommand(0.0, false).alongWith(arm.goToAngleCommand(90.0, true)).schedule()
+            twist.goToAngleCommand(270.0, true).alongWith(wrist.goToAngleCommand(270.0, true)).schedule()
         }
     }
 
@@ -233,14 +303,5 @@ class RobotContainer {
     val grabber = Grabber(
         grabberIO,
         0.0
-    )
-
-    init {
-        xbox.b(loop).rising().ifHigh {
-            grabber.intakeCommand(12.0).withTimeout(5.0).schedule()
-        }
-        xbox.y(loop).rising().ifHigh {
-            grabber.outputCommand(12.0).withTimeout(5.0).schedule()
-        }
-    }*/
+    )*/
 }

@@ -31,6 +31,10 @@ class Grabber (val io: GrabberIO, val holdVoltage: Double): SubsystemBase() {
         this.state = GrabberState.Intake(voltage)
     }
 
+    fun hold() {
+        this.state = GrabberState.Hold()
+    }
+
     fun controlPeriodic() {
         var voltage = 0.0
         val currentState = state
@@ -66,7 +70,7 @@ class Grabber (val io: GrabberIO, val holdVoltage: Double): SubsystemBase() {
         return FunctionalCommand(
             { -> Unit },
             { -> this.intake(voltage) },
-            { _ -> Unit },
+            { _ -> this.hold() },
             { -> this.state is GrabberState.Hold },
             this
         )
@@ -76,7 +80,7 @@ class Grabber (val io: GrabberIO, val holdVoltage: Double): SubsystemBase() {
         return FunctionalCommand(
             { -> Unit },
             { -> this.intake(-voltage) },
-            { _ -> Unit },
+            { _ -> this.hold() },
             { -> false },
             this
         )
