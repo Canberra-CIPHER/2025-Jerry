@@ -18,12 +18,12 @@ class SwerveDriveSubsystem(val io: SwerveDriveIO) : SubsystemBase() {
     ): Command {
         return FunctionalCommand(
             { -> Unit },
-            { -> run {
+            { ->
                 val scaledInputs = SwerveMath.scaleTranslation(
                     Translation2d(
                         translationX.asDouble,
                         translationY.asDouble
-                    ), 0.8
+                    ), 1.0
                 )
 
                 io.swerveDrive.driveFieldOriented(
@@ -35,7 +35,7 @@ class SwerveDriveSubsystem(val io: SwerveDriveIO) : SubsystemBase() {
                         io.swerveDrive.maximumModuleDriveVelocity
                     )
                 )
-            } },
+            },
             { _: Boolean -> io.swerveDrive.drive(ChassisSpeeds(0.0, 0.0, 0.0)) },
             { -> false },
             this

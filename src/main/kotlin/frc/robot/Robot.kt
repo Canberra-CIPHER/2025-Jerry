@@ -18,17 +18,17 @@ class Robot : TimedRobot() {
         robotContainer = RobotContainer()
         CanBridge.runTCP()
         //CommandScheduler.getInstance().registerSubsystem(robotContainer?.driveSystem!!)
-        //CommandScheduler.getInstance().registerSubsystem(robotContainer?.swerveDriveSystem!!)
+        CommandScheduler.getInstance().registerSubsystem(robotContainer?.swerveDriveSystem!!)
         //CommandScheduler.getInstance().registerSubsystem(robotContainer?.elevator!!)
         //CommandScheduler.getInstance().registerSubsystem(robotContainer?.arm!!)
-        CommandScheduler.getInstance().registerSubsystem(robotContainer?.twist!!)
-        CommandScheduler.getInstance().registerSubsystem(robotContainer?.wrist!!)
+//        CommandScheduler.getInstance().registerSubsystem(robotContainer?.twist!!)
+//        CommandScheduler.getInstance().registerSubsystem(robotContainer?.wrist!!)
        //CommandScheduler.getInstance().registerSubsystem(robotContainer?.grabber!!)
 
         //addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
         //addPeriodic({ -> robotContainer?.arm?.controlPeriodic() }, 0.01)
-        addPeriodic({ -> robotContainer?.twist?.controlPeriodic() }, 0.01)
-        addPeriodic({ -> robotContainer?.wrist?.controlPeriodic() }, 0.01)
+//        addPeriodic({ -> robotContainer?.twist?.controlPeriodic() }, 0.01)
+//        addPeriodic({ -> robotContainer?.wrist?.controlPeriodic() }, 0.01)
         //addPeriodic({ -> robotContainer?.grabber?.controlPeriodic() }, 0.01)
     }
 
@@ -55,23 +55,23 @@ class Robot : TimedRobot() {
     override fun teleopInit() {
         autonomousCommand?.cancel()
         //CommandScheduler.getInstance().setDefaultCommand(robotContainer?.driveSystem, robotContainer?.driveSystem?.driveDefaultCommand(robotContainer?.xbox!!))
-        /*CommandScheduler.getInstance().setDefaultCommand(robotContainer?.swerveDriveSystem, robotContainer?.swerveDriveSystem?.driveDefaultCommand(
+        CommandScheduler.getInstance().setDefaultCommand(robotContainer?.swerveDriveSystem, robotContainer?.swerveDriveSystem?.driveDefaultCommand(
             { -> robotContainer!!.xbox.leftX },
-            { -> robotContainer!!.xbox.leftY },
+            { -> robotContainer!!.xbox.leftY},
             { -> robotContainer!!.xbox.rightX },
             { -> robotContainer!!.xbox.rightY },
-            ))*/
-    }
+        ))
+}
 
-    override fun teleopPeriodic() {}
+override fun teleopPeriodic() {}
 
-    override fun teleopExit() {}
+override fun teleopExit() {}
 
-    override fun testInit() {
-        CommandScheduler.getInstance().cancelAll()
-    }
+override fun testInit() {
+CommandScheduler.getInstance().cancelAll()
+}
 
-    override fun testPeriodic() {}
+override fun testPeriodic() {}
 
-    override fun testExit() {}
+override fun testExit() {}
 }

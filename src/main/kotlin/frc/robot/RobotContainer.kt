@@ -39,22 +39,17 @@ class RobotContainer {
 
     val xbox = XboxController(0)
 
-    /*val swerveJsonDirectory = File(Filesystem.getDeployDirectory(),"swerve")
+    val swerveJsonDirectory = File(Filesystem.getDeployDirectory(),"swerve")
     val swerveDrive = SwerveParser(swerveJsonDirectory).createSwerveDrive(Units.feetToMeters(17.0))
 
     init {
         SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH
     }
 
-    val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
-    val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
-    val rightDrive1 = SparkMax(3, SparkLowLevel.MotorType.kBrushed)
-    val rightDrive2 = SparkMax(4, SparkLowLevel.MotorType.kBrushed)
-
     val swerveDriveIO = SwerveDriveIO(swerveDrive)
     val swerveDriveSystem = SwerveDriveSubsystem(swerveDriveIO)
 
-    val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
+    /*val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
     val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
     val rightDrive1 = SparkMax(3, SparkLowLevel.MotorType.kBrushed)
     val rightDrive2 = SparkMax(4, SparkLowLevel.MotorType.kBrushed)
@@ -193,7 +188,7 @@ class RobotContainer {
         jerryArm
     )*/
 
-    val twistMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
+    /*val twistMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configTwist1 = SparkMaxConfig()
@@ -231,7 +226,7 @@ class RobotContainer {
         jerryTwist
     )
 
-        val wristMotor1 = SparkMax(40, SparkLowLevel.MotorType.kBrushless)
+    val wristMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configWrist1 = SparkMaxConfig()
@@ -271,18 +266,22 @@ class RobotContainer {
 
     init {
         xbox.x(loop).rising().ifHigh {
-            twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
+            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
+            twist.goToAngleCommand(0.0, true).schedule()
         }
         xbox.a(loop).rising().ifHigh {
-            twist.goToAngleCommand(90.0, true).alongWith(wrist.goToAngleCommand(90.0, true)).schedule()
+            //wrist.goToAngleCommand(90.0, true).alongWith(wrist.goToAngleCommand(90.0, true)).schedule()
+            twist.goToAngleCommand(90.0, true).schedule()
         }
         xbox.b(loop).rising().ifHigh {
-            twist.goToAngleCommand(180.0, true).alongWith(wrist.goToAngleCommand(180.0, true)).schedule()
+            //twist.goToAngleCommand(180.0, true).alongWith(wrist.goToAngleCommand(180.0, true)).schedule()
+            twist.goToAngleCommand(180.0, true).schedule()
         }
         xbox.y(loop).rising().ifHigh {
-            twist.goToAngleCommand(270.0, true).alongWith(wrist.goToAngleCommand(270.0, true)).schedule()
+            //twist.goToAngleCommand(270.0, true).alongWith(wrist.goToAngleCommand(270.0, true)).schedule()
+            twist.goToAngleCommand(270.0, true).schedule()
         }
-    }
+    }*/
 
     /*val grabberMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
 
