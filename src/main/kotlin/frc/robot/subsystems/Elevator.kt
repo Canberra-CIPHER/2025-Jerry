@@ -43,7 +43,7 @@ class Elevator(
     }
 
     fun goToHeight(height: Double, reset: Boolean = true) {
-        /*if (reset) {
+      /*  if (reset) {
             this.pid.reset()
         }*/
         this.state = ElevatorState.Moving(height)
@@ -51,6 +51,10 @@ class Elevator(
 
     fun isStable(): Boolean {
         return this.pid.atSetpoint()
+    }
+
+    fun getCurrentHeight(): Double {
+        return io.positionProvider.getPosition()
     }
 
     fun controlPeriodic() {
@@ -63,8 +67,8 @@ class Elevator(
             is ElevatorState.EStop -> voltage = (0.0)
             is ElevatorState.Hold -> {
                 var output = pid.calculate(currentHeight, state.height)
-                //voltage = (output + this.feedforward.calculate(state.height))
                 voltage = output
+                //voltage = (output + this.feedforward.calculate(state.height))
 
                 if (!pid.atSetpoint()) {
                     this.state = ElevatorState.Moving(state.height)
@@ -80,8 +84,8 @@ class Elevator(
             }
             is ElevatorState.Moving -> {
                 var output = pid.calculate(currentHeight, state.height)
-                //voltage = (output + this.feedforward.calculate(state.height))
                 voltage = output
+                //voltage = (output + this.feedforward.calculate(state.height))
 
                 if (pid.atSetpoint()) {
                     this.state = ElevatorState.Hold(state.height)
@@ -95,6 +99,9 @@ class Elevator(
                             io.positionProvider.setPosition(calHeight)
                         }
                     }
+                }
+                else {
+                    io.positionProvider.setPosition(0.0)
                 }
             }
         }

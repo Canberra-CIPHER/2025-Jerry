@@ -1,6 +1,13 @@
 package frc.robot
 
 import au.grapplerobotics.LaserCan
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs
+import com.ctre.phoenix6.configs.FeedbackConfigs
+import com.ctre.phoenix6.configs.MotorOutputConfigs
+import com.ctre.phoenix6.controls.Follower
+import com.ctre.phoenix6.hardware.TalonFX
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue
+import com.ctre.phoenix6.signals.InvertedValue
 import edu.wpi.first.wpilibj.drive.DifferentialDrive
 import edu.wpi.first.wpilibj.XboxController
 import com.studica.frc.AHRS;
@@ -26,10 +33,12 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler
 import frc.robot.subsystems.*
 import frc.robot.subsystems.io.*
 import frc.robot.wrappers.WrappedSparkMax
+import frc.robot.wrappers.WrappedTalonFX
 import swervelib.SwerveDrive
 import swervelib.parser.SwerveParser
 import swervelib.telemetry.SwerveDriveTelemetry
 import java.io.File
+import kotlin.math.absoluteValue
 
 class RobotContainer {
     val loop = EventLoop()
@@ -46,8 +55,11 @@ class RobotContainer {
         SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH
     }
 
-    val swerveDriveIO = SwerveDriveIO(swerveDrive)
-    val swerveDriveSystem = SwerveDriveSubsystem(swerveDriveIO)
+    val driveXPID = ProfiledPIDController(5.0, 0.0, 0.0, TrapezoidProfile.Constraints(5.0, 800.0))
+    val driveYPID = ProfiledPIDController(5.0, 0.0, 0.0, TrapezoidProfile.Constraints(5.0, 800.0))
+
+    val swerveDriveIO = SwerveDriveIO(swerveDrive, { -> elevator.getCurrentHeight() > 0.2})
+    val swerveDriveSystem = SwerveDriveSubsystem(swerveDriveIO, driveXPID, driveYPID)
 
     /*val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
     val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
@@ -104,9 +116,38 @@ class RobotContainer {
         SmartDashboard.putData("Mech2d", mech)
     }
 
-    /*val liftMotor1 = SparkMax(10, SparkLowLevel.MotorType.kBrushless)
+    val liftMotor1 = TalonFX(20)
+    val liftMotor2 = TalonFX(21)
+
+    var liftConversion = 6.28 / 15.0 * (1.105 * 0.0254)
 
     init {
+        val outputConfigs = MotorOutputConfigs()
+        outputConfigs.Inverted = InvertedValue.CounterClockwise_Positive
+        liftMotor1.configurator.apply(outputConfigs)
+        liftMotor2.configurator.apply(outputConfigs)
+
+        liftMotor2.setControl(Follower(liftMotor1.deviceID, false))
+        val limitConfig = CurrentLimitsConfigs()
+        limitConfig.StatorCurrentLimit = 70.0
+        limitConfig.SupplyCurrentLimit = 40.0
+        limitConfig.StatorCurrentLimitEnable = true
+        limitConfig.SupplyCurrentLimitEnable = true
+        liftMotor1.configurator.apply(limitConfig)
+        liftMotor2.configurator.apply(limitConfig)
+
+        val encoderConfig = FeedbackConfigs()
+        encoderConfig.SensorToMechanismRatio = 1.0
+        encoderConfig.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor
+        liftMotor1.configurator.apply(encoderConfig)
+        liftMotor2.configurator.apply(encoderConfig)
+    }
+
+    val wrappedLiftMotor = WrappedTalonFX(liftMotor1, 1.0 / liftConversion)
+
+    //val liftMotor1 = SparkMax(10, SparkLowLevel.MotorType.kBrushless)
+
+    /*init {
         var conversion = 6.28 / 15.0 * (2.82/2.0 * 0.0254)
         var configLift1 = SparkMaxConfig()
         configLift1.inverted(false)
@@ -118,21 +159,21 @@ class RobotContainer {
             SparkBase.ResetMode.kResetSafeParameters,
             SparkBase.PersistMode.kPersistParameters
         )
-    }
+    }*/
 
     val liftMotorModel = DCMotor.getNEO(1).withReduction(15.0)
     val liftLaserCAN = LaserCan(0)
 
-    val liftMotor1Wrapped = WrappedSparkMax(liftMotor1, liftMotorModel)
+    //val liftMotor1Wrapped = WrappedSparkMax(liftMotor1, liftMotorModel)
 
     val liftIO = ElevatorIO(
-        liftMotor1Wrapped,
-        liftMotor1Wrapped,
-        getCalibrationHeight = { -> liftLaserCAN.measurement?.distance_mm?.div(1000.0) }
+        wrappedLiftMotor,
+        wrappedLiftMotor,
+        //getCalibrationHeight = { -> liftLaserCAN.measurement?.distance_mm?.div(1000.0) }
     )
 
-    val elevatorPID = ProfiledPIDController(28.0, 0.0, 0.0, TrapezoidProfile.Constraints(2.0, 16.0))
-    val elevatorFeedforward = ElevatorFeedforward(0.0, 0.11, 22.22, 0.01)
+    val elevatorPID = ProfiledPIDController(20.0, 1.0, 0.0, TrapezoidProfile.Constraints(2.0, 16.0))
+    val elevatorFeedforward = ElevatorFeedforward(0.0, 0.06, 10.21, 0.01)
 
     init {
         elevatorPID.setTolerance(0.02)
@@ -148,16 +189,16 @@ class RobotContainer {
         0.0,
         1.8,
         jerryElevator
-    )*/
+    )
 
-    /*val armMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
+    val armMotor1 = SparkMax(15, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configArm1 = SparkMaxConfig()
         configArm1.inverted(false)
-        configArm1.encoder.positionConversionFactor(360.0 / 25.0)
-        configArm1.encoder.velocityConversionFactor(360.0 / 25.0 / 60.0)
-        configArm1.smartCurrentLimit(80)
+        configArm1.encoder.positionConversionFactor(360.0 / 60.0)
+        configArm1.encoder.velocityConversionFactor(360.0 / 60.0 / 60.0)
+        configArm1.smartCurrentLimit(60)
         armMotor1.configure(
             configArm1,
             SparkBase.ResetMode.kResetSafeParameters,
@@ -165,7 +206,7 @@ class RobotContainer {
         )
     }
 
-    val armMotorModel = DCMotor.getNEO(1).withReduction(25.0)
+    val armMotorModel = DCMotor.getNEO(1).withReduction(60.0)
     val armMotor1Wrapped = WrappedSparkMax(armMotor1, armMotorModel)
 
     val armIO = RotationSystemIO(
@@ -173,7 +214,7 @@ class RobotContainer {
         armMotor1Wrapped
     )
 
-    val armPID = ProfiledPIDController(0.1, 0.0, 0.0, TrapezoidProfile.Constraints(360.0, 1400.0))
+    val armPID = ProfiledPIDController(0.1, 0.0, 0.0, TrapezoidProfile.Constraints(100.0, 800.0))
 
     init {
         armPID.setTolerance(0.5, 0.5)
@@ -186,9 +227,9 @@ class RobotContainer {
         armPID,
         armMotorModel,
         jerryArm
-    )*/
+    )
 
-    /*val twistMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
+    /*val twistMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configTwist1 = SparkMaxConfig()
@@ -226,44 +267,6 @@ class RobotContainer {
         jerryTwist
     )
 
-    val wristMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
-
-    init {
-        var configWrist1 = SparkMaxConfig()
-        configWrist1.inverted(false)
-        configWrist1.encoder.positionConversionFactor(360.0 / 25.0)
-        configWrist1.encoder.velocityConversionFactor(360.0 / 25.0 / 60.0)
-        configWrist1.smartCurrentLimit(80)
-        wristMotor1.configure(
-            configWrist1,
-            SparkBase.ResetMode.kResetSafeParameters,
-            SparkBase.PersistMode.kPersistParameters
-        )
-    }
-
-    val wristMotorModel = DCMotor.getNEO(1).withReduction(25.0)
-    val wristMotor1Wrapped = WrappedSparkMax(wristMotor1, wristMotorModel)
-
-    val wristIO = RotationSystemIO(
-        wristMotor1Wrapped,
-        wristMotor1Wrapped
-    )
-
-    val wristPID = ProfiledPIDController(0.1, 0.0, 0.0, TrapezoidProfile.Constraints(360.0, 1400.0))
-
-    init {
-        wristPID.setTolerance(0.5, 0.5)
-        wristPID.iZone = 3.0
-        SmartDashboard.putData("Wrist PID", wristPID)
-    }
-
-    val wrist = RotationSystem(
-        wristIO,
-        wristPID,
-        wristMotorModel,
-        jerryWrist
-    )
-
     init {
         xbox.x(loop).rising().ifHigh {
             //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
@@ -283,24 +286,67 @@ class RobotContainer {
         }
     }*/
 
-    /*val grabberMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
+    val coralGrabberMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
 
     init {
-        var configGrabber1 = SparkMaxConfig()
-        configGrabber1.inverted(false)
-        configGrabber1.encoder.positionConversionFactor(360.0)
-        configGrabber1.encoder.velocityConversionFactor(360.0)
-        configGrabber1.smartCurrentLimit(35)
-        grabberMotor1.configure(configGrabber1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
+        var configCoralGrabber1 = SparkMaxConfig()
+        configCoralGrabber1.inverted(false)
+        configCoralGrabber1.encoder.positionConversionFactor(360.0)
+        configCoralGrabber1.encoder.velocityConversionFactor(360.0)
+        configCoralGrabber1.smartCurrentLimit(17)
+        coralGrabberMotor1.configure(configCoralGrabber1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
     }
 
-    val grabberMotorModel = DCMotor.getNEO(1).withReduction(1.0)
-    val grabberMotor1Wrapped = WrappedSparkMax(grabberMotor1, grabberMotorModel)
+    val coralGrabberMotorModel = DCMotor.getNEO(1).withReduction(1.0)
+    val coralGrabberMotor1Wrapped = WrappedSparkMax(coralGrabberMotor1, coralGrabberMotorModel)
 
-    val grabberIO = GrabberIO(grabberMotor1Wrapped)
+    val coralGrabberIO = GrabberIO(coralGrabberMotor1Wrapped)
 
-    val grabber = Grabber(
-        grabberIO,
+    val coralGrabber = Grabber(
+        coralGrabberIO,
         0.0
-    )*/
+    )
+
+    val algaeGrabberMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
+
+    init {
+        var configAlgaeGrabber1 = SparkMaxConfig()
+        configAlgaeGrabber1.inverted(false)
+        configAlgaeGrabber1.encoder.positionConversionFactor(360.0)
+        configAlgaeGrabber1.encoder.velocityConversionFactor(360.0)
+        configAlgaeGrabber1.smartCurrentLimit(20)
+        algaeGrabberMotor1.configure(configAlgaeGrabber1, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters)
+    }
+
+    val algaeGrabberMotorModel = DCMotor.getNEO(1).withReduction(1.0)
+    val algaeGrabberMotor1Wrapped = WrappedSparkMax(algaeGrabberMotor1, algaeGrabberMotorModel)
+
+    val algaeGrabberIO = GrabberIO(algaeGrabberMotor1Wrapped)
+
+    val algaeGrabber = Grabber(
+        algaeGrabberIO,
+        0.0
+    )
+
+    init {
+        xbox.x(loop).rising().ifHigh {
+            //arm.goToAngleCommand(0.0, true).schedule()
+            elevator.goToHeightCommand(0.0, true).schedule()
+            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
+            //coralGrabber.intakeCommand(10.0).onlyWhile { xbox.xButton }.schedule()
+        }
+        xbox.a(loop).rising().ifHigh {
+            arm.goToAngleCommand(270.0, true).schedule()
+            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
+            //coralGrabber.outputCommand(10.0).onlyWhile { xbox.yButton }.schedule()
+        }
+        xbox.b(loop).rising().ifHigh {
+            swerveDriveSystem.driveToPosition(1.0, 1.0, 1.0, 1.0).schedule()
+        }
+        xbox.y(loop).rising().ifHigh {
+            elevator.goToHeightCommand(0.45, true).schedule()
+            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
+            //coralGrabber.outputCommand(10.0).onlyWhile { xbox.yButton }.schedule()
+        }
+    }
 }
