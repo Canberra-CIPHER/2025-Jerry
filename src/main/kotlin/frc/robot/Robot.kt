@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj.TimedRobot
 import au.grapplerobotics.CanBridge
+import com.fasterxml.jackson.databind.JsonSerializer.None
 import edu.wpi.first.networktables.NetworkTableInstance
 import kotlin.math.sign
 
@@ -66,39 +67,42 @@ class Robot : TimedRobot() {
             return 0.35
         }
         else {
-            return 1.0
+            return 0.8
         }
     }
 
     override fun teleopInit() {
         autonomousCommand?.cancel()
-        //CommandScheduler.getInstance().setDefaultCommand(robotContainer?.driveSystem, robotContainer?.driveSystem?.driveDefaultCommand(robotContainer?.xbox!!))
 
-        var headingX = -robotContainer!!.xbox.rightX
-        var headingY = -robotContainer!!.xbox.rightY
+        val snapFun = { ->
+            var snapX: Double? = null
+            var snapY: Double? = null
 
-        if (robotContainer!!.xbox.xButton) {
-            headingX = 0.0
-            headingY = -1.0
-        }
-        else if (robotContainer!!.xbox.aButton) {
-            headingX = -1.0
-            headingY = 0.0
-        }
-        else if (robotContainer!!.xbox.bButton) {
-            headingX = 0.0
-            headingY = 1.0
-        }
-        else if (robotContainer!!.xbox.yButton) {
-            headingX = 1.0
-            headingY = 0.0
+            if (robotContainer!!.xbox.xButton) {
+                snapX = 0.0
+                snapY = -1.0
+            }
+            else if (robotContainer!!.xbox.aButton) {
+                snapX = -1.0
+                snapY = 0.0
+            }
+            else if (robotContainer!!.xbox.bButton) {
+                snapX = 0.0
+                snapY = 1.0
+            }
+            else if (robotContainer!!.xbox.yButton) {
+                snapX = 1.0
+                snapY = 0.0
+            }
+
+            Pair(snapX, snapY)
         }
 
         CommandScheduler.getInstance().setDefaultCommand(robotContainer?.swerveDriveSystem, robotContainer?.swerveDriveSystem?.driveDefaultCommand(
             { -> squareInputs(-robotContainer!!.xbox.leftY) * getThrottleMultiplier() },
             { -> squareInputs(-robotContainer!!.xbox.leftX) * getThrottleMultiplier() },
-            { -> -robotContainer!!.xbox.rightX},
-            { -> -robotContainer!!.xbox.rightY},
+            { -> snapFun.invoke().first ?: -robotContainer!!.xbox.rightX },
+            { -> snapFun.invoke().second ?: -robotContainer!!.xbox.rightY },
             false,
         ))
 }
@@ -108,7 +112,7 @@ override fun teleopPeriodic() {}
 override fun teleopExit() {}
 
 override fun testInit() {
-CommandScheduler.getInstance().cancelAll()
+    CommandScheduler.getInstance().cancelAll()
 }
 
 override fun testPeriodic() {}

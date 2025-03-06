@@ -348,7 +348,7 @@ class RobotContainer {
             algaeGrabber.intakeCommand(6.0).onlyWhile { buttonBoard.getRawButton(10) }.schedule()
         }
         buttonBoard.button(11, loop).rising().ifHigh {
-            superstructure.loadFromStationCommand().schedule()
+            superstructure.goToStationLoadCommand().schedule()
         }
         /*buttonBoard.button(12, loop).rising().ifHigh {
         }*/

@@ -45,6 +45,10 @@ class RotationSystem(
         return this.pid.atSetpoint()
     }
 
+    fun getCurrentAngle(): Double {
+        return io.positionProvider.getPosition()
+    }
+
     fun controlPeriodic() {
         var currentAngle = io.positionProvider.getPosition()
         var voltage = 0.0
