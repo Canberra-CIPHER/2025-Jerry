@@ -18,18 +18,20 @@ class RotationSystem(
     var pid: ProfiledPIDController,
     var motor: DCMotor,
     var armModel: MechanismLigament2d,
+    val systemName: String
 ) :  SubsystemBase() {
     sealed class ArmState {
         class EStop() : ArmState()
+        class Init() : ArmState()
         class Hold(val angle: Double) : ArmState()
         class Moving(val angle: Double) : ArmState()
     }
 
-    var state: ArmState = ArmState.Hold(0.0)
+    var state: ArmState = ArmState.Init()
 
-    val armErrorPublisher = NetworkTableInstance.getDefault().getTopic("arm/error").genericPublish("double")
-    val armPositionPublisher = NetworkTableInstance.getDefault().getTopic("arm/position").genericPublish("double")
-    val armVoltagePublisher = NetworkTableInstance.getDefault().getTopic("arm/voltage").genericPublish("double")
+    val armErrorPublisher = NetworkTableInstance.getDefault().getTopic(systemName + "/error").genericPublish("double")
+    val armPositionPublisher = NetworkTableInstance.getDefault().getTopic(systemName + "/position").genericPublish("double")
+    val armVoltagePublisher = NetworkTableInstance.getDefault().getTopic(systemName + "/voltage").genericPublish("double")
 
     fun estop() {
         this.state = ArmState.EStop()
@@ -66,6 +68,10 @@ class RotationSystem(
                 if (pid.atSetpoint()) {
                     this.state = ArmState.Hold(state.angle)
                 }
+            }
+            is ArmState.Init -> {
+                io.positionProvider.setPosition(0.0)
+                this.state = ArmState.Hold(0.0)
             }
         }
 

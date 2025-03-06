@@ -22,6 +22,7 @@ import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Filesystem
+import edu.wpi.first.wpilibj.GenericHID
 import edu.wpi.first.wpilibj.event.EventLoop
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
@@ -47,6 +48,7 @@ class RobotContainer {
     //get() = Commands.print("No autonomous command configured")
 
     val xbox = XboxController(0)
+    val buttonBoard = GenericHID(1)
 
     val swerveJsonDirectory = File(Filesystem.getDeployDirectory(),"swerve")
     val swerveDrive = SwerveParser(swerveJsonDirectory).createSwerveDrive(Units.feetToMeters(17.0))
@@ -119,7 +121,7 @@ class RobotContainer {
     val liftMotor1 = TalonFX(20)
     val liftMotor2 = TalonFX(21)
 
-    var liftConversion = 6.28 / 15.0 * (1.105 * 0.0254)
+    var liftConversion = 6.28 / 15.0 * (1.105 * 0.0254) * 2.0
 
     init {
         val outputConfigs = MotorOutputConfigs()
@@ -129,8 +131,8 @@ class RobotContainer {
 
         liftMotor2.setControl(Follower(liftMotor1.deviceID, false))
         val limitConfig = CurrentLimitsConfigs()
-        limitConfig.StatorCurrentLimit = 70.0
-        limitConfig.SupplyCurrentLimit = 40.0
+        limitConfig.StatorCurrentLimit = 60.0
+        limitConfig.SupplyCurrentLimit = 30.0
         limitConfig.StatorCurrentLimitEnable = true
         limitConfig.SupplyCurrentLimitEnable = true
         liftMotor1.configurator.apply(limitConfig)
@@ -169,14 +171,16 @@ class RobotContainer {
     val liftIO = ElevatorIO(
         wrappedLiftMotor,
         wrappedLiftMotor,
+        getLimitLow = { -> liftLaserCAN.measurement?.distance_mm?.let { v -> v < 10 } }
         //getCalibrationHeight = { -> liftLaserCAN.measurement?.distance_mm?.div(1000.0) }
     )
 
     val elevatorPID = ProfiledPIDController(20.0, 1.0, 0.0, TrapezoidProfile.Constraints(2.0, 16.0))
-    val elevatorFeedforward = ElevatorFeedforward(0.0, 0.06, 10.21, 0.01)
+    // TODO: Check this
+    val elevatorFeedforward = ElevatorFeedforward(0.0, 0.03, 10.21, 0.01)
 
     init {
-        elevatorPID.setTolerance(0.02)
+        elevatorPID.setTolerance(0.02, 0.1)
         elevatorPID.iZone = 0.1
         SmartDashboard.putData("Elevator PID", elevatorPID)
     }
@@ -191,7 +195,7 @@ class RobotContainer {
         jerryElevator
     )
 
-    val armMotor1 = SparkMax(15, SparkLowLevel.MotorType.kBrushless)
+    val armMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configArm1 = SparkMaxConfig()
@@ -214,10 +218,10 @@ class RobotContainer {
         armMotor1Wrapped
     )
 
-    val armPID = ProfiledPIDController(0.1, 0.0, 0.0, TrapezoidProfile.Constraints(100.0, 800.0))
+    val armPID = ProfiledPIDController(0.1, 0.05, 0.0, TrapezoidProfile.Constraints(100.0, 800.0))
 
     init {
-        armPID.setTolerance(0.5, 0.5)
+        armPID.setTolerance(2.0, 0.5)
         armPID.iZone = 3.0
         SmartDashboard.putData("Arm PID", armPID)
     }
@@ -226,10 +230,11 @@ class RobotContainer {
         armIO,
         armPID,
         armMotorModel,
-        jerryArm
+        jerryArm,
+        "arm"
     )
 
-    /*val twistMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
+    val twistMotor1 = SparkMax(4, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configTwist1 = SparkMaxConfig()
@@ -237,6 +242,7 @@ class RobotContainer {
         configTwist1.encoder.positionConversionFactor(360.0 / 25.0)
         configTwist1.encoder.velocityConversionFactor(360.0 / 25.0 / 60.0)
         configTwist1.smartCurrentLimit(80)
+        configTwist1.disableFollowerMode()
         twistMotor1.configure(
             configTwist1,
             SparkBase.ResetMode.kResetSafeParameters,
@@ -252,10 +258,10 @@ class RobotContainer {
         twistMotor1Wrapped
     )
 
-    val twistPID = ProfiledPIDController(0.1, 0.0, 0.0, TrapezoidProfile.Constraints(360.0, 1400.0))
+    val twistPID = ProfiledPIDController(0.1, 0.05, 0.0, TrapezoidProfile.Constraints(360.0, 1400.0))
 
     init {
-        twistPID.setTolerance(0.5, 0.5)
+        twistPID.setTolerance(5.0, 0.5)
         twistPID.iZone = 3.0
         SmartDashboard.putData("Twist PID", twistPID)
     }
@@ -264,27 +270,9 @@ class RobotContainer {
         twistIO,
         twistPID,
         twistMotorModel,
-        jerryTwist
+        jerryTwist,
+        "twist"
     )
-
-    init {
-        xbox.x(loop).rising().ifHigh {
-            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
-            twist.goToAngleCommand(0.0, true).schedule()
-        }
-        xbox.a(loop).rising().ifHigh {
-            //wrist.goToAngleCommand(90.0, true).alongWith(wrist.goToAngleCommand(90.0, true)).schedule()
-            twist.goToAngleCommand(90.0, true).schedule()
-        }
-        xbox.b(loop).rising().ifHigh {
-            //twist.goToAngleCommand(180.0, true).alongWith(wrist.goToAngleCommand(180.0, true)).schedule()
-            twist.goToAngleCommand(180.0, true).schedule()
-        }
-        xbox.y(loop).rising().ifHigh {
-            //twist.goToAngleCommand(270.0, true).alongWith(wrist.goToAngleCommand(270.0, true)).schedule()
-            twist.goToAngleCommand(270.0, true).schedule()
-        }
-    }*/
 
     val coralGrabberMotor1 = SparkMax(20, SparkLowLevel.MotorType.kBrushless)
 
@@ -307,7 +295,7 @@ class RobotContainer {
         0.0
     )
 
-    val algaeGrabberMotor1 = SparkMax(50, SparkLowLevel.MotorType.kBrushless)
+    val algaeGrabberMotor1 = SparkMax(30, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configAlgaeGrabber1 = SparkMaxConfig()
@@ -328,25 +316,44 @@ class RobotContainer {
         0.0
     )
 
+    val superstructure = Superstructure(elevator, arm, twist)
+
     init {
-        xbox.x(loop).rising().ifHigh {
-            //arm.goToAngleCommand(0.0, true).schedule()
-            elevator.goToHeightCommand(0.0, true).schedule()
-            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
-            //coralGrabber.intakeCommand(10.0).onlyWhile { xbox.xButton }.schedule()
+        buttonBoard.button(1, loop).rising().ifHigh {
+            superstructure.goToReefLevelCommand(4).schedule()
         }
-        xbox.a(loop).rising().ifHigh {
-            arm.goToAngleCommand(270.0, true).schedule()
-            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
-            //coralGrabber.outputCommand(10.0).onlyWhile { xbox.yButton }.schedule()
+        buttonBoard.button(2, loop).rising().ifHigh {
+            superstructure.goToReefLevelCommand(3).schedule()
         }
-        xbox.b(loop).rising().ifHigh {
-            swerveDriveSystem.driveToPosition(1.0, 1.0, 1.0, 1.0).schedule()
+        buttonBoard.button(3, loop).rising().ifHigh {
+            superstructure.goToReefLevelCommand(2).schedule()
         }
-        xbox.y(loop).rising().ifHigh {
-            elevator.goToHeightCommand(0.45, true).schedule()
-            //twist.goToAngleCommand(0.0, true).alongWith(wrist.goToAngleCommand(0.0, true)).schedule()
-            //coralGrabber.outputCommand(10.0).onlyWhile { xbox.yButton }.schedule()
+        buttonBoard.button(4, loop).rising().ifHigh {
+            superstructure.goToReefLevelCommand(1).schedule()
+        }
+        /*buttonBoard.button(5, loop).rising().ifHigh {
+        }
+        buttonBoard.button(6, loop).rising().ifHigh {
+        }*/
+        buttonBoard.button(7, loop).rising().ifHigh {
+            coralGrabber.outputCommand(6.0).onlyWhile { buttonBoard.getRawButton(7) }.schedule()
+        }
+        buttonBoard.button(8, loop).rising().ifHigh() {
+            coralGrabber.intakeCommand(6.0).onlyWhile { buttonBoard.getRawButton(8) }.schedule()
+        }
+        buttonBoard.button(9, loop).rising().ifHigh {
+            algaeGrabber.outputCommand(6.0).onlyWhile { buttonBoard.getRawButton(9) }.schedule()
+        }
+        buttonBoard.button(10, loop).rising().ifHigh {
+            algaeGrabber.intakeCommand(6.0).onlyWhile { buttonBoard.getRawButton(10) }.schedule()
+        }
+        buttonBoard.button(11, loop).rising().ifHigh {
+            superstructure.loadFromStationCommand().schedule()
+        }
+        /*buttonBoard.button(12, loop).rising().ifHigh {
+        }*/
+        buttonBoard.button(13, loop).rising().ifHigh {
+           superstructure.goToStowedCommand().schedule()
         }
     }
 }

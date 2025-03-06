@@ -29,4 +29,8 @@ class WrappedSparkMax(val sparkMax: SparkMax, val motor: DCMotor) : VoltageContr
     override fun getPosition(): Double {
         return sparkMax.encoder.position
     }
+
+    override fun getCurrent(): Double {
+        return sparkMax.outputCurrent
+    }
 }

@@ -14,7 +14,7 @@ class WrappedTalonFX(val talon: TalonFX, val ratio: Double) : VoltageController,
     }
 
     override fun getVoltage(): Double {
-        return talon.supplyVoltage.valueAsDouble * talon.motorVoltage.valueAsDouble
+        return talon.motorVoltage.valueAsDouble
     }
 
     override fun setPosition(position: Double) {
@@ -23,5 +23,9 @@ class WrappedTalonFX(val talon: TalonFX, val ratio: Double) : VoltageController,
 
     override fun getPosition(): Double {
         return talon.position.valueAsDouble / ratio
+    }
+
+    override fun getCurrent(): Double {
+        return talon.supplyCurrent.valueAsDouble
     }
 }

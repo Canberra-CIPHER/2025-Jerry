@@ -119,6 +119,7 @@ class SwerveDriveSubsystem(
         translationY: DoubleSupplier,
         headingX: DoubleSupplier,
         headingY: DoubleSupplier,
+        isRelative: Boolean,
     ): Command {
         return FunctionalCommand(
             { -> Unit },

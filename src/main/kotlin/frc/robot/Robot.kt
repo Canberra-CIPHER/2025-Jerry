@@ -15,6 +15,8 @@ class Robot : TimedRobot() {
     private var autonomousCommand: Command? = null
     private var robotContainer: RobotContainer? = null
 
+    val elevatorCANPublisher = NetworkTableInstance.getDefault().getTopic("elevator/lasercan").genericPublish("double")
+
     override fun robotInit() {
         robotContainer = RobotContainer()
         CanBridge.runTCP()
@@ -22,14 +24,14 @@ class Robot : TimedRobot() {
         CommandScheduler.getInstance().registerSubsystem(robotContainer?.swerveDriveSystem!!)
         CommandScheduler.getInstance().registerSubsystem(robotContainer?.elevator!!)
         CommandScheduler.getInstance().registerSubsystem(robotContainer?.arm!!)
-        //CommandScheduler.getInstance().registerSubsystem(robotContainer?.twist!!)
+        CommandScheduler.getInstance().registerSubsystem(robotContainer?.twist!!)
         CommandScheduler.getInstance().registerSubsystem(robotContainer?.coralGrabber!!)
         CommandScheduler.getInstance().registerSubsystem(robotContainer?.algaeGrabber!!)
 
         addPeriodic({ -> robotContainer?.swerveDriveSystem?.controlPeriodic() }, 0.01)
         addPeriodic({ -> robotContainer?.elevator?.controlPeriodic() }, 0.01)
         addPeriodic({ -> robotContainer?.arm?.controlPeriodic() }, 0.01)
-        //addPeriodic({ -> robotContainer?.twist?.controlPeriodic() }, 0.01)
+        addPeriodic({ -> robotContainer?.twist?.controlPeriodic() }, 0.01)
         addPeriodic({ -> robotContainer?.coralGrabber?.controlPeriodic() }, 0.01)
         addPeriodic({ -> robotContainer?.algaeGrabber?.controlPeriodic() }, 0.01)
     }
@@ -37,6 +39,7 @@ class Robot : TimedRobot() {
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
         robotContainer?.loop?.poll()
+        elevatorCANPublisher.setInteger((robotContainer!!.liftLaserCAN?.measurement?.distance_mm ?: 0).toLong())
     }
 
     override fun disabledInit() {}
@@ -70,11 +73,33 @@ class Robot : TimedRobot() {
     override fun teleopInit() {
         autonomousCommand?.cancel()
         //CommandScheduler.getInstance().setDefaultCommand(robotContainer?.driveSystem, robotContainer?.driveSystem?.driveDefaultCommand(robotContainer?.xbox!!))
+
+        var headingX = -robotContainer!!.xbox.rightX
+        var headingY = -robotContainer!!.xbox.rightY
+
+        if (robotContainer!!.xbox.xButton) {
+            headingX = 0.0
+            headingY = -1.0
+        }
+        else if (robotContainer!!.xbox.aButton) {
+            headingX = -1.0
+            headingY = 0.0
+        }
+        else if (robotContainer!!.xbox.bButton) {
+            headingX = 0.0
+            headingY = 1.0
+        }
+        else if (robotContainer!!.xbox.yButton) {
+            headingX = 1.0
+            headingY = 0.0
+        }
+
         CommandScheduler.getInstance().setDefaultCommand(robotContainer?.swerveDriveSystem, robotContainer?.swerveDriveSystem?.driveDefaultCommand(
             { -> squareInputs(-robotContainer!!.xbox.leftY) * getThrottleMultiplier() },
             { -> squareInputs(-robotContainer!!.xbox.leftX) * getThrottleMultiplier() },
             { -> -robotContainer!!.xbox.rightX},
             { -> -robotContainer!!.xbox.rightY},
+            false,
         ))
 }
 

@@ -6,7 +6,7 @@ import frc.robot.wrappers.VoltageController
 data class ElevatorIO(
     val voltageController: VoltageController,
     val positionProvider: PositionProvider,
-    val getLimitLow: (() -> Boolean)? = null,
-    val getLimitHigh: (() -> Boolean)? = null,
+    val getLimitLow: (() -> Boolean?)? = null,
+    val getLimitHigh: (() -> Boolean?)? = null,
     val getCalibrationHeight: (() -> Double?)? = null,
 )

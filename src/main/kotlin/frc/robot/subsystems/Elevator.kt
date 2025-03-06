@@ -36,6 +36,7 @@ class Elevator(
     val elevatorErrorPublisher = NetworkTableInstance.getDefault().getTopic("elevator/error").genericPublish("double")
     val elevatorPositionPublisher = NetworkTableInstance.getDefault().getTopic("elevator/position").genericPublish("double")
     val elevatorVoltagePublisher = NetworkTableInstance.getDefault().getTopic("elevator/voltage").genericPublish("double")
+    val elevatorCurrentPublisher = NetworkTableInstance.getDefault().getTopic("elevator/current").genericPublish("double")
     val elevatorCANPublisher = NetworkTableInstance.getDefault().getTopic("elevator/CAN").genericPublish("double")
 
     fun estop() {
@@ -68,7 +69,7 @@ class Elevator(
             is ElevatorState.Hold -> {
                 var output = pid.calculate(currentHeight, state.height)
                 voltage = output
-                //voltage = (output + this.feedforward.calculate(state.height))
+                voltage = (output + this.feedforward.calculate(state.height))
 
                 if (!pid.atSetpoint()) {
                     this.state = ElevatorState.Moving(state.height)
@@ -85,7 +86,7 @@ class Elevator(
             is ElevatorState.Moving -> {
                 var output = pid.calculate(currentHeight, state.height)
                 voltage = output
-                //voltage = (output + this.feedforward.calculate(state.height))
+                voltage = (output + this.feedforward.calculate(state.height))
 
                 if (pid.atSetpoint()) {
                     this.state = ElevatorState.Hold(state.height)
@@ -108,6 +109,7 @@ class Elevator(
 
         if (io.getLimitLow?.invoke() == true && voltage < 0.0) {
             voltage = 0.0
+            io.positionProvider.setPosition(0.0)
         }
 
         if (io.getLimitHigh?.invoke() == true && voltage > 0.0) {
@@ -121,6 +123,7 @@ class Elevator(
         elevatorErrorPublisher.setDouble(pid.positionError)
         elevatorPositionPublisher.setDouble(io.positionProvider.getPosition())
         elevatorVoltagePublisher.setDouble(io.voltageController.getVoltage())
+        elevatorCurrentPublisher.setDouble(io.voltageController.getCurrent())
 
         io.getCalibrationHeight.let { getCalibrationHeight ->
             val calHeight = getCalibrationHeight?.let { it() }
