@@ -18,6 +18,7 @@ import com.revrobotics.spark.SparkBase
 import edu.wpi.first.math.controller.ElevatorFeedforward
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.ProfiledPIDController
+import edu.wpi.first.math.filter.LinearFilter
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
@@ -165,23 +166,32 @@ class RobotContainer {
 
     val liftMotorModel = DCMotor.getNEO(1).withReduction(15.0)
     val liftLaserCAN = LaserCan(0)
+    val liftFilter = LinearFilter.movingAverage(10)
 
     //val liftMotor1Wrapped = WrappedSparkMax(liftMotor1, liftMotorModel)
 
     val liftIO = ElevatorIO(
         wrappedLiftMotor,
         wrappedLiftMotor,
-        getLimitLow = { -> liftLaserCAN.measurement?.distance_mm?.let { v -> v < 10 } }
+        getLimitLow = { ->
+            val measurement = liftLaserCAN.measurement?.distance_mm
+            if (measurement != null) {
+                liftFilter.calculate(measurement.toDouble()) < 30.0
+            }
+            else {
+                null
+            }
+        }
         //getCalibrationHeight = { -> liftLaserCAN.measurement?.distance_mm?.div(1000.0) }
     )
 
-    val elevatorPID = ProfiledPIDController(20.0, 1.0, 0.0, TrapezoidProfile.Constraints(2.0, 16.0))
+    val elevatorPID = ProfiledPIDController(20.0, 5.0, 0.0, TrapezoidProfile.Constraints(2.0, 16.0))
     // TODO: Check this
     val elevatorFeedforward = ElevatorFeedforward(0.0, 0.03, 10.21, 0.01)
 
     init {
-        elevatorPID.setTolerance(0.02, 0.1)
-        elevatorPID.iZone = 0.1
+        elevatorPID.setTolerance(0.05, 0.1)
+        elevatorPID.iZone = 0.5
         SmartDashboard.putData("Elevator PID", elevatorPID)
     }
 
@@ -234,7 +244,7 @@ class RobotContainer {
         "arm"
     )
 
-    val twistMotor1 = SparkMax(4, SparkLowLevel.MotorType.kBrushless)
+    val twistMotor1 = SparkMax(2, SparkLowLevel.MotorType.kBrushless)
 
     init {
         var configTwist1 = SparkMaxConfig()
@@ -319,17 +329,45 @@ class RobotContainer {
     val superstructure = Superstructure(elevator, arm, twist)
 
     init {
+        xbox.povUp(loop).rising().ifHigh {
+            elevator.goToHeightCommand(elevator.getCurrentHeight() + 0.2, true).schedule()
+        }
+        xbox.povDown(loop).rising().ifHigh {
+            elevator.goToHeightCommand(elevator.getCurrentHeight() - 0.2, false).schedule()
+        }
+        xbox.povLeft(loop).rising().ifHigh {
+            arm.goToAngleCommand(arm.getCurrentAngle() + 15.0, true).schedule()
+        }
+        xbox.povRight(loop).rising().ifHigh {
+            arm.goToAngleCommand(arm.getCurrentAngle() - 15.0, false).schedule()
+        }
         buttonBoard.button(1, loop).rising().ifHigh {
-            superstructure.goToReefLevelCommand(4).schedule()
+            if (buttonBoard.getRawButton(12)) {
+                superstructure.goToReefAlgaeLevelCommand(4).schedule()
+            } else {
+                superstructure.goToReefLevelCommand(4).schedule()
+            }
         }
         buttonBoard.button(2, loop).rising().ifHigh {
-            superstructure.goToReefLevelCommand(3).schedule()
+            if (buttonBoard.getRawButton(12)) {
+                superstructure.goToReefAlgaeLevelCommand(3).schedule()
+            } else {
+                superstructure.goToReefLevelCommand(3).schedule()
+            }
         }
         buttonBoard.button(3, loop).rising().ifHigh {
-            superstructure.goToReefLevelCommand(2).schedule()
+            if (buttonBoard.getRawButton(12)) {
+                superstructure.goToReefAlgaeLevelCommand(2).schedule()
+            } else {
+                superstructure.goToReefLevelCommand(2).schedule()
+            }
         }
         buttonBoard.button(4, loop).rising().ifHigh {
-            superstructure.goToReefLevelCommand(1).schedule()
+            if (buttonBoard.getRawButton(12)) {
+                superstructure.goToReefAlgaeLevelCommand(1).schedule()
+            } else {
+                superstructure.goToReefLevelCommand(1).schedule()
+            }
         }
         /*buttonBoard.button(5, loop).rising().ifHigh {
         }

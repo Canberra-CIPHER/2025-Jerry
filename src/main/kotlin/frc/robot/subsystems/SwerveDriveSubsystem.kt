@@ -55,7 +55,7 @@ class SwerveDriveSubsystem(
 
     fun controlPeriodic() {
         val state = this.state
-        var speedFactor = 1.0
+        var speedFactor = 0.75
 
         if (io.getForceSlow?.invoke() == true) {
             speedFactor = 0.5

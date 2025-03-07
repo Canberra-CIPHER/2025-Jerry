@@ -69,7 +69,7 @@ class Elevator(
             is ElevatorState.Hold -> {
                 var output = pid.calculate(currentHeight, state.height)
                 voltage = output
-                voltage = (output + this.feedforward.calculate(state.height))
+                //voltage = (output + this.feedforward.calculate(state.height))
 
                 if (!pid.atSetpoint()) {
                     this.state = ElevatorState.Moving(state.height)
@@ -86,7 +86,7 @@ class Elevator(
             is ElevatorState.Moving -> {
                 var output = pid.calculate(currentHeight, state.height)
                 voltage = output
-                voltage = (output + this.feedforward.calculate(state.height))
+                //voltage = (output + this.feedforward.calculate(state.height))
 
                 if (pid.atSetpoint()) {
                     this.state = ElevatorState.Hold(state.height)

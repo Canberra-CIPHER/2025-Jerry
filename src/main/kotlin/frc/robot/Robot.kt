@@ -52,6 +52,7 @@ class Robot : TimedRobot() {
     override fun autonomousInit() {
         /*autonomousCommand = robotContainer?.driveSystem?.snapToAngleCommand(45.0, true)
         autonomousCommand?.schedule()*/
+        robotContainer!!.swerveDriveSystem.driveToPosition(-1.0, -1.0, 0.0, 0.0).schedule()
     }
 
     override fun autonomousPeriodic() {}
