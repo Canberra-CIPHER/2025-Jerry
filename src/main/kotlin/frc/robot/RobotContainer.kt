@@ -377,7 +377,8 @@ class RobotContainer {
         buttonBoard.button(1, loop).rising().ifHigh {
             if (buttonBoard.getRawButton(12)) {
                 superstructure.goToAlgaeStowedCommand().schedule()
-            } else {
+            }
+            else {
                 superstructure.goToReefLevelCommand(4)?.schedule()
             }
         }
@@ -392,14 +393,16 @@ class RobotContainer {
         buttonBoard.button(3, loop).rising().ifHigh {
             if (buttonBoard.getRawButton(12)) {
                 superstructure.goToReefAlgaeLevelCommand(2)?.schedule()
-            } else {
+            }
+            else {
                 superstructure.goToReefLevelCommand(2)?.schedule()
             }
         }
         buttonBoard.button(4, loop).rising().ifHigh {
             if (buttonBoard.getRawButton(12)) {
                 superstructure.goToReefAlgaeLevelCommand(1)?.schedule()
-            } else {
+            }
+            else {
                 superstructure.goToReefLevelCommand(1)?.schedule()
             }
         }
