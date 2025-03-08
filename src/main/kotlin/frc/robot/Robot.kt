@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj.TimedRobot
 import au.grapplerobotics.CanBridge
 import com.fasterxml.jackson.databind.JsonSerializer.None
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.networktables.NetworkTableInstance
 import kotlin.math.sign
 
@@ -52,7 +54,10 @@ class Robot : TimedRobot() {
     override fun autonomousInit() {
         /*autonomousCommand = robotContainer?.driveSystem?.snapToAngleCommand(45.0, true)
         autonomousCommand?.schedule()*/
-        robotContainer!!.swerveDriveSystem.driveToPosition(-1.0, -1.0, 0.0, 0.0).schedule()
+        val pose = robotContainer!!.swerveDriveSystem.currentPose()
+        robotContainer!!.swerveDriveSystem.driveToPosition(pose.plus(Transform2d(
+            0.0, 0.5, Rotation2d.fromDegrees(0.0)
+        ))).schedule()
     }
 
     override fun autonomousPeriodic() {}
@@ -68,7 +73,7 @@ class Robot : TimedRobot() {
             return 0.35
         }
         else {
-            return 0.8
+            return 0.5
         }
     }
 
@@ -100,11 +105,10 @@ class Robot : TimedRobot() {
         }
 
         CommandScheduler.getInstance().setDefaultCommand(robotContainer?.swerveDriveSystem, robotContainer?.swerveDriveSystem?.driveDefaultCommand(
-            { -> squareInputs(-robotContainer!!.xbox.leftY) * getThrottleMultiplier() },
             { -> squareInputs(-robotContainer!!.xbox.leftX) * getThrottleMultiplier() },
+            { -> squareInputs(robotContainer!!.xbox.leftY) * getThrottleMultiplier() },
             { -> snapFun.invoke().first ?: -robotContainer!!.xbox.rightX },
             { -> snapFun.invoke().second ?: -robotContainer!!.xbox.rightY },
-            false,
         ))
 }
 

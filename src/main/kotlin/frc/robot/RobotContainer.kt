@@ -15,13 +15,20 @@ import com.revrobotics.spark.SparkMax
 import com.revrobotics.spark.SparkLowLevel
 import com.revrobotics.spark.config.SparkMaxConfig
 import com.revrobotics.spark.SparkBase
+import edu.wpi.first.cameraserver.CameraServer
+import edu.wpi.first.cscore.UsbCamera
 import edu.wpi.first.math.controller.ElevatorFeedforward
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.ProfiledPIDController
 import edu.wpi.first.math.filter.LinearFilter
+import edu.wpi.first.math.geometry.Rotation3d
+import edu.wpi.first.math.geometry.Transform3d
+import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.AddressableLED
+import edu.wpi.first.wpilibj.AddressableLEDBuffer
 import edu.wpi.first.wpilibj.Filesystem
 import edu.wpi.first.wpilibj.GenericHID
 import edu.wpi.first.wpilibj.event.EventLoop
@@ -36,6 +43,7 @@ import frc.robot.subsystems.*
 import frc.robot.subsystems.io.*
 import frc.robot.wrappers.WrappedSparkMax
 import frc.robot.wrappers.WrappedTalonFX
+import org.photonvision.PhotonCamera
 import swervelib.SwerveDrive
 import swervelib.parser.SwerveParser
 import swervelib.telemetry.SwerveDriveTelemetry
@@ -48,6 +56,8 @@ class RobotContainer {
     //val autonomousCommand: Command
     //get() = Commands.print("No autonomous command configured")
 
+    val vision = PhotonCamera("camera")
+    val leds = AddressableLED(0)
     val xbox = XboxController(0)
     val buttonBoard = GenericHID(1)
 
@@ -56,13 +66,36 @@ class RobotContainer {
 
     init {
         SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH
+        CameraServer.startAutomaticCapture()
+
+        var colour = AddressableLEDBuffer(120)
+        var redValue = 10
+        var greenValue = 0
+        var blueValue = 10
+
+        for (index in 0..119) {
+            colour.setRGB(index, redValue, greenValue, blueValue)
+
+            redValue += 10
+
+            if (redValue > 255) {
+                redValue = 0
+            }
+        }
+        leds.setLength(120)
+        leds.setData(colour)
+        leds.start()
     }
 
-    val driveXPID = ProfiledPIDController(5.0, 0.0, 0.0, TrapezoidProfile.Constraints(5.0, 800.0))
-    val driveYPID = ProfiledPIDController(5.0, 0.0, 0.0, TrapezoidProfile.Constraints(5.0, 800.0))
+    val driveXPID = ProfiledPIDController(5.0, 0.0, 0.0, TrapezoidProfile.Constraints(1.0, 30.0))
+    val driveYPID = ProfiledPIDController(5.0, 0.0, 0.0, TrapezoidProfile.Constraints(1.0, 30.0))
 
     val swerveDriveIO = SwerveDriveIO(swerveDrive, { -> elevator.getCurrentHeight() > 0.2})
-    val swerveDriveSystem = SwerveDriveSubsystem(swerveDriveIO, driveXPID, driveYPID)
+    val robotOriginToCameraTransform = Transform3d(
+        Translation3d(0.0, 0.0, 0.0),
+        Rotation3d(0.0, 0.0, 0.0)
+    )
+    val swerveDriveSystem = SwerveDriveSubsystem(swerveDriveIO, driveXPID, driveYPID /*, vision, robotOriginToCameraTransform */)
 
     /*val leftDrive1 = SparkMax(1, SparkLowLevel.MotorType.kBrushed)
     val leftDrive2 = SparkMax(2, SparkLowLevel.MotorType.kBrushed)
@@ -343,30 +376,31 @@ class RobotContainer {
         }
         buttonBoard.button(1, loop).rising().ifHigh {
             if (buttonBoard.getRawButton(12)) {
-                superstructure.goToReefAlgaeLevelCommand(4).schedule()
+                superstructure.goToAlgaeStowedCommand().schedule()
             } else {
-                superstructure.goToReefLevelCommand(4).schedule()
+                superstructure.goToReefLevelCommand(4)?.schedule()
             }
         }
         buttonBoard.button(2, loop).rising().ifHigh {
             if (buttonBoard.getRawButton(12)) {
-                superstructure.goToReefAlgaeLevelCommand(3).schedule()
-            } else {
-                superstructure.goToReefLevelCommand(3).schedule()
+                superstructure.goToProcessorCommand().schedule()
+            }
+            else {
+                superstructure.goToReefLevelCommand(3)?.schedule()
             }
         }
         buttonBoard.button(3, loop).rising().ifHigh {
             if (buttonBoard.getRawButton(12)) {
-                superstructure.goToReefAlgaeLevelCommand(2).schedule()
+                superstructure.goToReefAlgaeLevelCommand(2)?.schedule()
             } else {
-                superstructure.goToReefLevelCommand(2).schedule()
+                superstructure.goToReefLevelCommand(2)?.schedule()
             }
         }
         buttonBoard.button(4, loop).rising().ifHigh {
             if (buttonBoard.getRawButton(12)) {
-                superstructure.goToReefAlgaeLevelCommand(1).schedule()
+                superstructure.goToReefAlgaeLevelCommand(1)?.schedule()
             } else {
-                superstructure.goToReefLevelCommand(1).schedule()
+                superstructure.goToReefLevelCommand(1)?.schedule()
             }
         }
         /*buttonBoard.button(5, loop).rising().ifHigh {
@@ -380,10 +414,10 @@ class RobotContainer {
             coralGrabber.intakeCommand(6.0).onlyWhile { buttonBoard.getRawButton(8) }.schedule()
         }
         buttonBoard.button(9, loop).rising().ifHigh {
-            algaeGrabber.outputCommand(6.0).onlyWhile { buttonBoard.getRawButton(9) }.schedule()
+            algaeGrabber.intakeCommand(6.0).onlyWhile { buttonBoard.getRawButton(9) }.schedule()
         }
         buttonBoard.button(10, loop).rising().ifHigh {
-            algaeGrabber.intakeCommand(6.0).onlyWhile { buttonBoard.getRawButton(10) }.schedule()
+            algaeGrabber.outputCommand(6.0).onlyWhile { buttonBoard.getRawButton(10) }.schedule()
         }
         buttonBoard.button(11, loop).rising().ifHigh {
             superstructure.goToStationLoadCommand().schedule()

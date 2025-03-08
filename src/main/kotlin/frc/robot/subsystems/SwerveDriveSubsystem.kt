@@ -1,6 +1,8 @@
 package frc.robot.subsystems
 
 import edu.wpi.first.math.controller.ProfiledPIDController
+import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Transform3d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.wpilibj2.command.Command
@@ -8,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import frc.robot.subsystems.RotationSystem.ArmState
 import frc.robot.subsystems.io.SwerveDriveIO
+import org.photonvision.PhotonCamera
 import swervelib.math.SwerveMath
 import java.util.function.DoubleSupplier
 import kotlin.math.absoluteValue
@@ -18,6 +21,8 @@ class SwerveDriveSubsystem(
     val io: SwerveDriveIO,
     var pidX: ProfiledPIDController,
     var pidY: ProfiledPIDController,
+    var camera: PhotonCamera? = null,
+    var robotOriginToCameraTransform: Transform3d? = null
 ) : SubsystemBase() {
     sealed class DriveState {
         class EStop() : DriveState()
@@ -28,10 +33,7 @@ class SwerveDriveSubsystem(
             val headingY: Double,
         ) : DriveState()
         class Position(
-            val positionX: Double,
-            val positionY: Double,
-            val headingX: Double,
-            val headingY: Double,
+            val pose: Pose2d
         ) : DriveState()
     }
 
@@ -41,16 +43,29 @@ class SwerveDriveSubsystem(
         this.state = DriveState.EStop()
     }
 
-    fun goToPosition(tX: Double, tY: Double, hX: Double, hY: Double) {
-        this.state = DriveState.Position(tX, tY, hX, hY)
+    fun goToPosition(pose: Pose2d) {
+        this.state = DriveState.Position(pose)
     }
 
     fun manualControl(tX: Double, tY: Double, hX: Double, hY: Double) {
         this.state = DriveState.Manual(tX, tY, hX, hY)
     }
 
-    fun isStable(pid: ProfiledPIDController): Boolean {
-        return pid.atSetpoint()
+    fun isStable(): Boolean {
+        return this.pidX.atSetpoint() && this.pidY.atSetpoint()
+    }
+
+    fun currentPose(): Pose2d {
+        return io.swerveDrive.pose
+    }
+
+    override fun periodic() {
+        for (result in camera?.allUnreadResults ?: emptyList()) {
+            if (result.hasTargets()) {
+                val fullTransform = result.bestTarget.bestCameraToTarget.plus(robotOriginToCameraTransform!!)
+                io.swerveDrive.addVisionMeasurement(Pose2d(fullTransform.translation.toTranslation2d(), fullTransform.rotation.toRotation2d()), result.timestampSeconds)
+            }
+        }
     }
 
     fun controlPeriodic() {
@@ -84,16 +99,8 @@ class SwerveDriveSubsystem(
             }
 
             is DriveState.Position -> {
-                var translationX = pidX.calculate(io.swerveDrive.pose.x, state.positionX)
-                var translationY = pidY.calculate(io.swerveDrive.pose.y, state.positionY)
-
-                val clampToFactor = { x: Double -> min(
-                    max(x, -speedFactor * io.swerveDrive.maximumChassisVelocity),
-                    speedFactor * io.swerveDrive.maximumChassisVelocity
-                ) }
-
-                translationX = clampToFactor(translationX)
-                translationY = clampToFactor(translationY)
+                var translationX = pidX.calculate(io.swerveDrive.pose.x, state.pose.x)
+                var translationY = pidY.calculate(io.swerveDrive.pose.y, state.pose.y)
 
                 /*val scaledInputs = SwerveMath.(
                     Translation2d(
@@ -106,7 +113,7 @@ class SwerveDriveSubsystem(
                     io.swerveDrive.swerveController.getRawTargetSpeeds(
                         translationX,
                         translationY,
-                        Math.atan2(state.headingY, state.headingX),
+                        state.pose.rotation.radians,
                         io.swerveDrive.odometryHeading.radians
                     )
                 )
@@ -118,8 +125,7 @@ class SwerveDriveSubsystem(
         translationX: DoubleSupplier,
         translationY: DoubleSupplier,
         headingX: DoubleSupplier,
-        headingY: DoubleSupplier,
-        isRelative: Boolean,
+        headingY: DoubleSupplier
     ): Command {
         return FunctionalCommand(
             { -> Unit },
@@ -131,16 +137,13 @@ class SwerveDriveSubsystem(
     }
 
     fun driveToPosition(
-        translationX: Double,
-        translationY: Double,
-        headingX: Double,
-        headingY: Double,
+        pose: Pose2d
     ): Command {
         return FunctionalCommand(
+            { -> goToPosition(pose) },
             { -> Unit },
-            { -> goToPosition(translationX, translationY, headingX, headingY) },
             { _: Boolean -> io.swerveDrive.drive(ChassisSpeeds(0.0, 0.0, 0.0)) },
-            { -> false },
+            { -> isStable() },
             this
         )
     }

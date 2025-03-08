@@ -40,9 +40,12 @@ class Superstructure(private val elevator: Elevator, private val arm: RotationSy
 
     init {
         configurations = mapOf(
-            Pair("origin", Configuration("origin", 0.3, 0.0, 0.0)),
+            Pair("origin", Configuration("origin", 0.5, 0.0, 0.0)),
             Pair("stowed", Configuration("stowed", 0.0, 0.0, 0.0)),
+            Pair("algaeStowed", Configuration("algaeStowed", 0.2, 180.0, 0.0)),
+
             Pair("stnLoad", Configuration("stnLoad", 0.15, 38.571, 0.0)),
+            Pair("processor", Configuration("processor", 0.0, 90.0, 0.0)),
 
             Pair("coral1", Configuration("coral1", 0.2, -118.428, 90.0)),
             Pair("coral2", Configuration("coral2", 0.3, -74.429, 90.0)),
@@ -91,20 +94,12 @@ class Superstructure(private val elevator: Elevator, private val arm: RotationSy
         )*/
     }
 
-    fun goToStationLoadCommand(): Command {
-        val conf = configurations["stnLoad"]!!
+    fun goToAlgaeStowedCommand(): Command {
+        val conf = configurations["algaeStowed"]!!
 
-        return goToOriginCommand().andThen(arm.goToAngleCommand(conf.getArmAngle(), false)).andThen(elevator.goToHeightCommand(conf.getHeight(), false))
-            .andThen(wrist.goToAngleCommand(conf.getWristAngle(), false))
-    }
-
-    fun goToReefLevelCommand(level: Int): Command {
-        val conf = configurations["coral${level}"]!!
-
-        return goToOriginCommand().andThen(elevator.goToHeightCommand(conf.getHeight(), false)
-            .alongWith(whenArmOkToSwing().andThen(arm.goToAngleCommand(conf.getArmAngle(), false)))
-            .alongWith(wrist.goToAngleCommand(conf.getWristAngle(), false))
-        )
+        return goToOriginCommand().andThen(wrist.goToAngleCommand(conf.getWristAngle(), false)
+            .andThen(arm.goToAngleCommand(conf.getArmAngle(), false)))
+            .andThen(elevator.goToHeightCommand(conf.getHeight(), false))
         /*return goToOriginCommand().andThen(
             elevator.goToHeightCommand(conf.getHeight(), false)
                 .andThen(arm.goToAngleCommand(conf.getArmAngle(), false))
@@ -112,13 +107,46 @@ class Superstructure(private val elevator: Elevator, private val arm: RotationSy
         )*/
     }
 
-    fun goToReefAlgaeLevelCommand(level: Int): Command {
-        val conf = configurations["algae${level}"]!!
+    fun goToStationLoadCommand(): Command {
+        val conf = configurations["stnLoad"]!!
 
-        return goToOriginCommand().andThen(elevator.goToHeightCommand(conf.getHeight(), false)
-            .alongWith(whenArmOkToSwing().andThen(arm.goToAngleCommand(conf.getArmAngle(), false)))
-            .alongWith(wrist.goToAngleCommand(conf.getWristAngle(), false))
-        )
+        return goToOriginCommand().andThen(arm.goToAngleCommand(conf.getArmAngle(), false)).andThen(elevator.goToHeightCommand(conf.getHeight(), false))
+            .andThen(wrist.goToAngleCommand(conf.getWristAngle(), false))
+    }
+
+    fun goToProcessorCommand(): Command {
+        val conf = configurations["processor"]!!
+
+        return goToOriginCommand().andThen(arm.goToAngleCommand(conf.getArmAngle(), false)).andThen(elevator.goToHeightCommand(conf.getHeight(), false))
+            .andThen(wrist.goToAngleCommand(conf.getWristAngle(), false))
+    }
+
+    fun goToReefLevelCommand(level: Int): Command? {
+        val conf = configurations["coral${level}"] ?: return null
+
+        return goToOriginCommand()
+            .andThen(
+                arm.goToAngleCommand(conf.getArmAngle(), false)
+                    .alongWith(wrist.goToAngleCommand(conf.getWristAngle(), false))
+            )
+            .andThen(elevator.goToHeightCommand(conf.getHeight(), false))
+        /*return goToOriginCommand().andThen(
+            elevator.goToHeightCommand(conf.getHeight(), false)
+                .andThen(arm.goToAngleCommand(conf.getArmAngle(), false))
+                .andThen(wrist.goToAngleCommand(conf.getWristAngle(), false))
+        )*/
+    }
+
+    fun goToReefAlgaeLevelCommand(level: Int): Command? {
+        val conf = configurations["algae${level}"] ?: return null
+
+        return goToOriginCommand()
+            .andThen(
+                arm.goToAngleCommand(conf.getArmAngle(), false)
+                    .alongWith(wrist.goToAngleCommand(conf.getWristAngle(), false))
+            )
+            .andThen(elevator.goToHeightCommand(conf.getHeight(), false))
+
         /*return goToOriginCommand().andThen(
             elevator.goToHeightCommand(conf.getHeight(), false)
                 .andThen(arm.goToAngleCommand(conf.getArmAngle(), false))
