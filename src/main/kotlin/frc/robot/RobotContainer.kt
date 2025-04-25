@@ -68,21 +68,45 @@ class RobotContainer {
         SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH
         CameraServer.startAutomaticCapture()
 
-        var colour = AddressableLEDBuffer(120)
+        var colour = AddressableLEDBuffer(240)
         var redValue = 10
         var greenValue = 0
-        var blueValue = 10
+        var blueValue = 30
+        var colourChangeDirection = 0
 
-        for (index in 0..119) {
+        for (index in 0..239) {
             colour.setRGB(index, redValue, greenValue, blueValue)
 
-            redValue += 10
+            if (colourChangeDirection == 0) {
+                redValue += 5
 
-            if (redValue > 255) {
-                redValue = 0
+                if (redValue >= 255) {
+                    redValue = 255
+                    colourChangeDirection = 1
+                }
             }
+            else if (colourChangeDirection == 1) {
+                redValue -= 5
+
+                if (redValue <= 0) {
+                    redValue = 0
+                    colourChangeDirection = 0
+                }
+            }
+
+            print("colour change " + colourChangeDirection)
+            print(redValue)
+
+            /*for (index in 0..119) {
+            var hue = 1
+            //var hueCounter = 0
+
+            for (hueCounter in 1..10) {
+                colour.setRGB(index, redValue, greenValue, blueValue)
+            }
+        }*/
         }
-        leds.setLength(120)
+        leds.setLength(240)
         leds.setData(colour)
         leds.start()
     }
